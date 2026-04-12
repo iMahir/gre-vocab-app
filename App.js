@@ -226,7 +226,7 @@ export default function App() {
   }, [loadWords]);
 
   useEffect(() => {
-    // OTA checks are only supported in production/dev-client builds, not Expo Go development mode.
+    // Skip OTA checks during development; they are intended for published production builds.
     if (__DEV__) return;
 
     let mounted = true;
@@ -548,8 +548,6 @@ export default function App() {
             total: nextTotal,
             accuracy: Math.round((nextCorrect / nextTotal) * 100),
           });
-          setQuizResult(null);
-          setQuizSelectedOption('');
           return;
         }
         nextQuizWord();
