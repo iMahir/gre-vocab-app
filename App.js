@@ -46,6 +46,9 @@ const STORAGE_KEYS = {
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
 };
 
+// Minimum flex value so a zero-count segment stays visible as a sliver
+const MIN_PROGRESS_FLEX = 0.01;
+
 function shuffleArray(values) {
   const next = [...values];
   for (let i = next.length - 1; i > 0; i -= 1) {
@@ -87,6 +90,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const soundRef = useRef(null);
+  const autoAdvanceRef = useRef(null);
 
   const selectedGroup =
     selectedGroupIndex === null ? null : groups[selectedGroupIndex] ?? null;
@@ -142,6 +146,15 @@ export default function App() {
     );
   }, [globalStatuses]);
 
+  const globalUnseenCount = useMemo(
+    () =>
+      Math.max(
+        0,
+        allWordsCount - globalCounts.mastered - globalCounts.reviewing - globalCounts.learning
+      ),
+    [allWordsCount, globalCounts]
+  );
+
   // Search Logic
   const filteredSearchWords = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -189,6 +202,9 @@ export default function App() {
     return () => {
       if (soundRef.current) {
         soundRef.current.unloadAsync();
+      }
+      if (autoAdvanceRef.current !== null) {
+        clearTimeout(autoAdvanceRef.current);
       }
     };
   }, []);
@@ -363,6 +379,7 @@ export default function App() {
     const nextCardIndex = (normalizedCardIndex + 1) % totalWords;
     setCardIndex(nextCardIndex);
     setQuizResult(null);
+    setQuizSelectedOption('');
     await persistGroupProgress(statuses, nextCardIndex);
   }, [cardIndex, persistGroupProgress, statuses, totalWords]);
 
@@ -380,7 +397,11 @@ export default function App() {
 
       // Auto-advance if correct after short delay
       if (isCorrect) {
-        setTimeout(() => {
+        if (autoAdvanceRef.current !== null) {
+          clearTimeout(autoAdvanceRef.current);
+        }
+        autoAdvanceRef.current = setTimeout(() => {
+          autoAdvanceRef.current = null;
           nextQuizWord();
         }, 1200);
       }
@@ -442,7 +463,7 @@ export default function App() {
                       styles.compactProgressSegment,
                       {
                         backgroundColor: STATE_COLORS[stateKey],
-                        flex: counts[stateKey] || 0.01,
+                        flex: counts[stateKey] || MIN_PROGRESS_FLEX,
                       },
                     ]}
                   />
@@ -613,19 +634,19 @@ export default function App() {
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.mastered, flex: globalCounts.mastered || 0.01 },
+                    { backgroundColor: STATE_COLORS.mastered, flex: globalCounts.mastered || MIN_PROGRESS_FLEX },
                   ]}
                 />
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.reviewing, flex: globalCounts.reviewing || 0.01 },
+                    { backgroundColor: STATE_COLORS.reviewing, flex: globalCounts.reviewing || MIN_PROGRESS_FLEX },
                   ]}
                 />
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.learning, flex: globalCounts.learning || 0.01 },
+                    { backgroundColor: STATE_COLORS.learning, flex: globalCounts.learning || MIN_PROGRESS_FLEX },
                   ]}
                 />
                 <View
@@ -633,14 +654,7 @@ export default function App() {
                     styles.compactProgressSegment,
                     {
                       backgroundColor: '#333',
-                      flex:
-                        Math.max(
-                          0,
-                          allWordsCount -
-                            globalCounts.mastered -
-                            globalCounts.reviewing -
-                            globalCounts.learning
-                        ) || 1,
+                      flex: globalUnseenCount || 1,
                     },
                   ]}
                 />
