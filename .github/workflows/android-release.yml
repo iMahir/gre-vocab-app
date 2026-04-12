@@ -39,7 +39,7 @@ jobs:
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
       - name: Prepare release tag
         id: tag
@@ -55,7 +55,7 @@ jobs:
         with:
           tag: ${{ steps.tag.outputs.value }}
           name: GRE Vocab Android ${{ steps.tag.outputs.value }}
-          artifacts: android/app/build/outputs/apk/debug/app-debug.apk
+          artifacts: android/app/build/outputs/apk/release/app-release-unsigned.apk
           artifactContentType: application/vnd.android.package-archive
           generateReleaseNotes: true
           allowUpdates: true

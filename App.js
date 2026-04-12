@@ -149,11 +149,18 @@ export default function App() {
         STORAGE_KEYS.cardIndex(group.group),
       ]);
 
-      const parsedStatuses = savedStatuses?.[1] ? JSON.parse(savedStatuses[1]) : {};
+      let parsedStatuses = {};
+      if (savedStatuses?.[1]) {
+        try {
+          parsedStatuses = JSON.parse(savedStatuses[1]);
+        } catch {
+          setError('Saved deck data was corrupted and has been reset.');
+        }
+      }
       const parsedCardIndex = Number.parseInt(savedCardIndex?.[1] ?? '0', 10);
 
       setStatuses(parsedStatuses && typeof parsedStatuses === 'object' ? parsedStatuses : {});
-      setCardIndex(Number.isNaN(parsedCardIndex) ? 0 : Math.max(parsedCardIndex, 0));
+      setCardIndex(Math.max(Number.isNaN(parsedCardIndex) ? 0 : parsedCardIndex, 0));
     } catch {
       setStatuses({});
       setCardIndex(0);
@@ -200,7 +207,8 @@ export default function App() {
       if (!totalWords) {
         return;
       }
-      const nextCardIndex = cardIndex + 1 >= totalWords ? 0 : cardIndex + 1;
+      const normalizedCardIndex = cardIndex >= 0 ? cardIndex % totalWords : 0;
+      const nextCardIndex = (normalizedCardIndex + 1) % totalWords;
 
       setStatuses(nextStatuses);
       setCardIndex(nextCardIndex);
