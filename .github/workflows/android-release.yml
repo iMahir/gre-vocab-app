@@ -22,6 +22,13 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --non-interactive
+
+      # Must be AFTER "expo prebuild" so Gradle files exist (gradlew, gradle-wrapper.properties, *.gradle, etc.)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -29,14 +36,9 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate native Android project
-        run: npx expo prebuild --platform android --non-interactive
-
       - name: Build APK
         run: |
+          test -f android/gradlew
           cd android
           chmod +x ./gradlew
           ./gradlew assembleRelease
