@@ -57,7 +57,7 @@ jobs:
         with:
           tag: ${{ steps.tag.outputs.value }}
           name: GRE Vocab Android ${{ steps.tag.outputs.value }}
-          artifacts: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          artifacts: android/app/build/outputs/apk/release/*.apk
           artifactContentType: application/vnd.android.package-archive
           generateReleaseNotes: true
           allowUpdates: true
