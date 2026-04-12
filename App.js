@@ -58,10 +58,12 @@ export default function App() {
   const totalWords = words.length;
 
   const currentWord = useMemo(() => {
-    if (!words.length) {
+    const wordCount = words.length;
+    if (!wordCount) {
       return null;
     }
-    return words[cardIndex % words.length];
+    const normalizedIndex = ((cardIndex % wordCount) + wordCount) % wordCount;
+    return words[normalizedIndex];
   }, [cardIndex, words]);
 
   const counts = useMemo(() => {
@@ -195,7 +197,10 @@ export default function App() {
         ...statuses,
         [currentWord.word]: state,
       };
-      const nextCardIndex = totalWords > 0 ? (cardIndex + 1) % totalWords : 0;
+      if (!totalWords) {
+        return;
+      }
+      const nextCardIndex = (cardIndex + 1) % totalWords;
 
       setStatuses(nextStatuses);
       setCardIndex(nextCardIndex);
