@@ -55,6 +55,8 @@ const STORAGE_KEYS = {
 const MIN_PROGRESS_FLEX = 0.01;
 const QUIZ_SUMMARY_INTERVAL = 10;
 const SWIPE_THRESHOLD = 90;
+const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
+const INCORRECT_ANSWER_VIBRATION_MS = 120;
 
 function shuffleArray(values) {
   const next = [...values];
@@ -223,6 +225,7 @@ export default function App() {
   }, [loadWords]);
 
   useEffect(() => {
+    // OTA checks are only supported in production/dev-client builds, not Expo Go development mode.
     if (__DEV__) return;
 
     let mounted = true;
@@ -534,7 +537,7 @@ export default function App() {
       setQuizScore({ correct: nextCorrect, total: nextTotal });
 
       if (!isCorrect) {
-        Vibration.vibrate(120);
+        Vibration.vibrate(INCORRECT_ANSWER_VIBRATION_MS);
       }
 
       if (autoAdvanceRef.current !== null) {
@@ -553,7 +556,7 @@ export default function App() {
           return;
         }
         nextQuizWord();
-      }, 1200);
+      }, QUIZ_AUTO_ADVANCE_DELAY_MS);
     },
     [currentWord, nextQuizWord, quizResult, quizScore.correct, quizScore.total]
   );
