@@ -1,0 +1,2043 @@
+[
+  {
+    "group": "Group 1",
+    "words": [
+      {
+        "word": "abound",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/abound-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "be present in large quantities",
+        "example": "Wildfires abound in the lush green meadows of the valley.",
+        "synonyms": [
+          "proliferate",
+          "thrive",
+          "flourish"
+        ],
+        "mnemonic": "A-bound -> ABUNDance. Think of how heat transfer problems abound in thermodynamics; they are present everywhere in large quantities."
+      },
+      {
+        "word": "amorphous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/amorphous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "lacking structure; unclear",
+        "example": "His plans for the future were still amorphous, changing every few weeks.",
+        "synonyms": [
+          "shapeless",
+          "indefinite",
+          "vague"
+        ],
+        "mnemonic": "'A' (no) + 'morph' (shape). Like a liquid metal before casting, it has no defined structure."
+      },
+      {
+        "word": "austere",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/austere-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "(of a person) strict and stern in character; (of living conditions) lacking luxury; extremely harsh",
+        "example": "With his austere manner, Mr. Thompson rarely cracked a smile. / John moved into an austere apartment with only the most basic furnishings and no luxuries.",
+        "synonyms": [
+          "harsh",
+          "dour",
+          "grim",
+          "spartan",
+          "ascetic",
+          "abstemious"
+        ],
+        "mnemonic": "Sounds like 'aansoo' (tears) + 'tear'. Or think of a very strict lab instructor who gives zero marks for formatting errors—a very austere person."
+      },
+      {
+        "word": "belie",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/belie-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "give a false impression of; mask",
+        "example": "Her sparkling eyes belie the sadness she must feel.",
+        "synonyms": [
+          "conceal",
+          "contradict",
+          "be at odds with"
+        ],
+        "mnemonic": "'Be' + 'lie'. To be a lie. A perfectly smooth surface finish might belie the massive internal stresses hiding inside a machined part."
+      },
+      {
+        "word": "capricious",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/capricious-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "having varying moods; fickle",
+        "example": "The capricious nature of the weather has made planning outdoor events difficult.",
+        "synonyms": [
+          "mercurial",
+          "volatile",
+          "impulsive"
+        ],
+        "mnemonic": "Think of the unpredictable, capricious nature of the weather in Ahmedabad during the monsoon—sunny one minute, raining the next."
+      },
+      {
+        "word": "cerebral",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/cerebral-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "related to the brain; intellectual; focused on learning rather than emotion",
+        "example": "The surgeon specialized in cerebral procedures. / Sophia had a cerebral approach to solving problems.",
+        "synonyms": [
+          "neurological",
+          "cranial",
+          "cortical",
+          "analytical",
+          "rational",
+          "academic"
+        ],
+        "mnemonic": "The 'cerebrum' is a part of the brain. Deriving numerical solutions for complex ODEs requires a highly cerebral approach rather than an emotional one."
+      },
+      {
+        "word": "congenial",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/congenial-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "(of a person) likable and friendly, often due to shared interests; (of a thing) enjoyable because it aligns with one's tendencies",
+        "example": "Congenial as she was, Nancy was always invited to parties. / She found the small town a more congenial way of life.",
+        "synonyms": [
+          "convivial",
+          "genial",
+          "kindred",
+          "pleasant",
+          "agreeable",
+          "appealing"
+        ],
+        "mnemonic": "'Con' (together) + 'genial' (gene). Having similar genes means you are friendly. Hanging out at the campus cafeteria with friends who share your goals is a congenial environment."
+      },
+      {
+        "word": "conspicuous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/conspicuous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "easily noticed; obvious",
+        "example": "On Insta, it's important that your vacation be as conspicuous as possible.",
+        "synonyms": [
+          "manifest",
+          "patent",
+          "striking"
+        ],
+        "mnemonic": "'Con' + 'spic' (see). Can be easily seen. Wearing a bright orange safety helmet on a factory floor makes you very conspicuous."
+      },
+      {
+        "word": "cursory",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/cursory-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "lacking effort; without care",
+        "example": "He gave a cursory glance at the document before signing it.",
+        "synonyms": [
+          "desultory",
+          "perfunctory",
+          "token"
+        ],
+        "mnemonic": "Think of moving a computer 'cursor' across a screen rapidly without reading. Doing a cursory check on a lab report before submitting usually leaves silly mistakes behind."
+      },
+      {
+        "word": "daunting",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/daunting-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "scary or frightening; (of a task) seeming impossible",
+        "example": "Memorizing 960 GRE words is daunting but necessary.",
+        "synonyms": [
+          "formidable",
+          "intimidating",
+          "unnerving"
+        ],
+        "mnemonic": "Sounds like 'Don'. Facing a mafia Don is scary. Similarly, designing and analyzing a full monocoque chassis from scratch can feel like a daunting task."
+      },
+      {
+        "word": "deify",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/deify-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "look up to someone or something as a god",
+        "example": "In some ancient cultures, the sun was deified and worshiped.",
+        "synonyms": [
+          "venerate",
+          "lionize",
+          "exalt"
+        ],
+        "mnemonic": "From 'Deity' (god). To make someone a deity. In India, fans often deify famous cricket players."
+      },
+      {
+        "word": "didactic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/didactic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "meant for teaching; educational, sometimes in a condescending manner",
+        "example": "The play was not only entertaining but also didactic, offering lessons on morality.",
+        "synonyms": [
+          "instructive",
+          "doctrinal",
+          "pedagogic"
+        ],
+        "mnemonic": "'Didi' (elder sister) + 'act'. Didi always acts like a teacher, giving you didactic (and sometimes annoying) advice."
+      },
+      {
+        "word": "disseminate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/disseminate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "distribute or circulate broadly",
+        "example": "The invention of the printing press allowed information to disseminate rapidly.",
+        "synonyms": [
+          "disperse",
+          "promulgate",
+          "propagate"
+        ],
+        "mnemonic": "'Semin' means seed. To scatter seeds everywhere. A good business plan needs marketing to disseminate the idea to the public."
+      },
+      {
+        "word": "feasible",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/feasible-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "likely to be achieved; practical",
+        "example": "Hopefully carbon capture technology will be feasible in the future.",
+        "synonyms": [
+          "attainable",
+          "realizable",
+          "expedient"
+        ],
+        "mnemonic": "'Fee' + 'sible'. It is possible to pay the fee. In industry, before launching a product, you must check if the manufacturing process is economically feasible."
+      },
+      {
+        "word": "flout",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/flout-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "break a rule without guilt",
+        "example": "Students flouted the classroom's 'no chewing gum' rule.",
+        "synonyms": [
+          "defy",
+          "scorn",
+          "contravene"
+        ],
+        "mnemonic": "Rhymes with 'out'. You get kicked OUT if you flout the rules. Like intentionally ignoring safety protocols in a workshop."
+      },
+      {
+        "word": "homogeneous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/homogeneous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "composed of similar parts; alike",
+        "example": "The population in the small town was quite homogeneous, with little diversity.",
+        "synonyms": [
+          "uniform",
+          "analogous",
+          "undistinguishable"
+        ],
+        "mnemonic": "'Homo' (same) + 'geneous' (kind). Think of a perfectly mixed alloy where the material properties are exactly the same everywhere."
+      },
+      {
+        "word": "humdrum",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/humdrum-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "boring; unlikely to excite",
+        "example": "More often than not, Netflix movies are humdrum, cookie-cutter affairs.",
+        "synonyms": [
+          "mundane",
+          "banal",
+          "prosaic"
+        ],
+        "mnemonic": "'Hum' + 'drum'. Listening to the exact same hum and drum beat gets boring. The repetitive hum of a generator in the background can be very humdrum."
+      },
+      {
+        "word": "insipid",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/insipid-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "without flavor; lacking energy",
+        "example": "The professor was tiring of the students' insipid remarks.",
+        "synonyms": [
+          "bland",
+          "dull",
+          "vapid"
+        ],
+        "mnemonic": "'In' + 'sip'. You take a sip and there's no flavor. Like drinking plain hot water when you were expecting a strong masala chai."
+      },
+      {
+        "word": "loquacious",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/loquacious-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "likely to talk a lot; wordy",
+        "example": "Loquacious to a fault, Bill never took the hint to, on occasion, shut up.",
+        "synonyms": [
+          "garrulous",
+          "voluble",
+          "verbose"
+        ],
+        "mnemonic": "'Loqua' is a root word for speech. Someone who is loquacious is like that one classmate who won't stop chattering during a lecture."
+      },
+      {
+        "word": "misanthropic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/misanthropic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "having a distaste for humans and society",
+        "example": "No one has seen that misanthropic hermit in years.",
+        "synonyms": [
+          "reclusive",
+          "unsociable",
+          "inhospitable"
+        ],
+        "mnemonic": "'Mis' (hate/wrong) + 'anthro' (mankind, like anthropology). A misanthropic person hates being around people."
+      },
+      {
+        "word": "misnomer",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/misnomer-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "a misleading or inaccurate name",
+        "example": "The authoritarian regime likes to call itself a 'democracy,' an obvious misnomer.",
+        "synonyms": [],
+        "mnemonic": "'Mis' (wrong) + 'nomer' (name). Calling a standard two-wheeler scooter a 'heavy-duty all-terrain vehicle' is a huge misnomer."
+      },
+      {
+        "word": "negligent",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/negligent-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "lacking care or attention",
+        "example": "The captain's negligent behavior led to the death of thousands.",
+        "synonyms": [
+          "remiss",
+          "neglectful",
+          "lax"
+        ],
+        "mnemonic": "Directly related to 'neglect'. Being negligent with scheduled machine maintenance will eventually lead to major breakdowns."
+      },
+      {
+        "word": "obsequious",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/obsequious-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "excessively submissive to authority",
+        "example": "Dictators tend to surround themselves with obsequious apologists.",
+        "synonyms": [
+          "servile",
+          "sycophantic",
+          "unctuous"
+        ],
+        "mnemonic": "'Obse' (obsessed) + 'qui' (yes). Someone obsessed with saying 'yes' to the boss just to get favors."
+      },
+      {
+        "word": "placate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/placate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "decrease someone's anger or other negative emotion",
+        "example": "He tried to placate the angry customer by offering a full refund.",
+        "synonyms": [
+          "pacify",
+          "mollify",
+          "conciliate"
+        ],
+        "mnemonic": "Give a 'plate' of 'cake' to a crying child to placate them and calm them down."
+      },
+      {
+        "word": "proclivity",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/proclivity-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "a fondness or liking for something",
+        "example": "Her proclivity for expensive pastries is wreaking havoc on her finances.",
+        "synonyms": [
+          "inclination",
+          "propensity",
+          "tendency"
+        ],
+        "mnemonic": "'Pro' (forward) + 'cliff'. A tendency to lean forward. Having a proclivity for entrepreneurship means you naturally lean toward exploring business ideas."
+      },
+      {
+        "word": "puerile",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/puerile-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "immature and childish",
+        "example": "The mature audience was unimpressed by the comedian's puerile humor.",
+        "synonyms": [
+          "infantile",
+          "juvenile",
+          "inane"
+        ],
+        "mnemonic": "Sounds like 'Purely ill'. Throwing chalk across a college classroom is puerile behavior."
+      },
+      {
+        "word": "quixotic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/quixotic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "excessively visionary; unfeasible",
+        "example": "His quixotic dream of creating a world without conflict seemed impossible.",
+        "synonyms": [
+          "idealistic",
+          "utopian",
+          "nonviable"
+        ],
+        "mnemonic": "'Quick' + 'exotic'. Having exotic, unrealistic dreams. Planning to build a fully functional flying car over a single weekend is a quixotic idea."
+      },
+      {
+        "word": "spendthrift",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/spendthrift-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "someone who spends money recklessly",
+        "example": "He was a spendthrift, constantly buying unnecessary items and racking up debt.",
+        "synonyms": [
+          "profligate",
+          "prodigal",
+          "squanderer"
+        ],
+        "mnemonic": "'Spends' all their 'thrift' (savings). Buying a heavily overpriced sports bike when a simple Activa gets the job done easily is the mark of a spendthrift."
+      },
+      {
+        "word": "taciturn",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/taciturn-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "of few words; speaking little",
+        "example": "He's generally taciturn, so when he speaks you know it's important.",
+        "synonyms": [
+          "unforthcoming",
+          "reserved",
+          "retiring"
+        ],
+        "mnemonic": "'Taxi' + 'turn'. A taxi driver who just takes the turns and drives you to your destination without speaking a single word."
+      },
+      {
+        "word": "wary",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/wary-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "exercising caution; careful",
+        "example": "We can't always be wary; sometimes we have to take risks.",
+        "synonyms": [
+          "chary",
+          "vigilant",
+          "heedful"
+        ],
+        "mnemonic": "Think of 'War'. In a war zone, you must be very wary of your surroundings. Just like you must be wary around high-voltage equipment."
+      }
+    ]
+  },
+  {
+    "group": "Group 2",
+    "words": [
+      {
+        "word": "adulterate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/adulterate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "damage the quality of; corrupt",
+        "example": "Chemical runoff regularly adulterates our water supply.",
+        "synonyms": [
+          "defile",
+          "taint",
+          "debase"
+        ],
+        "mnemonic": "Adding cheaper, weaker metals to a high-quality alloy will adulterate (corrupt) its structural integrity."
+      },
+      {
+        "word": "advocate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/advocate-pronunciation.mp3",
+        "part_of_speech": "verb / noun",
+        "definition": "support; be in favor of / someone who supports a cause, organization, or person",
+        "example": "The board advocated a more conservative marketing strategy. / John is an advocate for many progressive causes.",
+        "synonyms": [
+          "champion",
+          "back",
+          "endorse",
+          "proponent",
+          "crusader"
+        ],
+        "mnemonic": "'Ad' + 'vocal'. Being vocal about adding a new policy or idea means you support it."
+      },
+      {
+        "word": "aggrandize",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/aggrandize-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "enhance one's power or standing",
+        "example": "Roman leading men never passed on an opportunity to aggrandize themselves.",
+        "synonyms": [
+          "embellish",
+          "augment",
+          "magnify"
+        ],
+        "mnemonic": "Contains the word 'Grand'. To make your business or your reputation seem much grander and more powerful than it is."
+      },
+      {
+        "word": "alacrity",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/alacrity-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "eagerness to do something",
+        "example": "The children completed their chores with surprising alacrity.",
+        "synonyms": [
+          "zeal",
+          "haste",
+          "ardor"
+        ],
+        "mnemonic": "Sounds a bit like 'electricity'. When you have an entrepreneurial idea you love, you get charged up and jump into it with electricity and eagerness."
+      },
+      {
+        "word": "ambivalent",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/ambivalent-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "having conflicting emotions; unsure",
+        "example": "It's normal to feel ambivalent when moving to a new place.",
+        "synonyms": [
+          "equivocal",
+          "irresolute",
+          "vacillating"
+        ],
+        "mnemonic": "'Ambi' means both (like ambidextrous). You have feelings for *both* sides of a decision, leaving you unsure which to pick."
+      },
+      {
+        "word": "ameliorate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/ameliorate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "improve a bad feeling or bad situation",
+        "example": "Strong service and timely support can ameliorate customer anger.",
+        "synonyms": [
+          "ease",
+          "mitigate",
+          "relieve"
+        ],
+        "mnemonic": "Think of 'Amul' butter. Adding Amul butter to a poorly cooked dish will instantly ameliorate (improve) the taste!"
+      },
+      {
+        "word": "amenable",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/amenable-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "(of a person) receptive to change; open / (of a thing) responsive to",
+        "example": "The students were amenable to less homework. / The software is amenable to customization, and we can tailor it to our needs.",
+        "synonyms": [
+          "acquiescent",
+          "compliant",
+          "tractable",
+          "susceptible",
+          "receptive",
+          "reactive"
+        ],
+        "mnemonic": "'Amen' + 'able'. Someone who is always able to say 'Amen' (yes) to new proposals or changes."
+      },
+      {
+        "word": "anachronistic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/anachronistic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "of the wrong time or era",
+        "example": "Dreams of colonial conquest are anachronistic in today's modern world.",
+        "synonyms": [
+          "archaic",
+          "outmoded",
+          "antiquated"
+        ],
+        "mnemonic": "'Ana' (wrong/against) + 'chron' (time). Using a bullock cart to commute in modern Ahmedabad instead of your Activa 3G would be highly anachronistic."
+      },
+      {
+        "word": "audacious",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/audacious-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "bold; unafraid of risks / rude; exhibiting disrespect",
+        "example": "Elon Musk incessantly pursues his audacious plan for a city on Mars. / His audacious remark during the meeting caught everyone off guard.",
+        "synonyms": [
+          "daring",
+          "intrepid",
+          "unflinching",
+          "impudent",
+          "presumptuous",
+          "impertinent"
+        ],
+        "mnemonic": "Sounds like 'Audi'. Someone who boldly parks their luxury Audi right in the middle of a busy campus road is both daring and highly disrespectful."
+      },
+      {
+        "word": "avaricious",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/avaricious-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "greedy; always wanting more",
+        "example": "Free market economies not only tolerate but reward avaricious behavior.",
+        "synonyms": [
+          "acquisitive",
+          "rapacious",
+          "grasping"
+        ],
+        "mnemonic": "'A' + 'vari' (very) + 'cious' (rich). A person who constantly wants to be *very rich* no matter what is avaricious."
+      },
+      {
+        "word": "banal",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/banal-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "unoriginal and dull; lacking creativity",
+        "example": "The reviewer grew weary of banal, by-the-book action movies.",
+        "synonyms": [
+          "trite",
+          "platitudinous",
+          "vapid"
+        ],
+        "mnemonic": "Ban-all. We should 'ban all' Bollywood movies that just copy the exact same boring, unoriginal storyline."
+      },
+      {
+        "word": "benign",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/benign-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "harmless; having little effect / (of a person's character) kindhearted; nice",
+        "example": "Despite causing some initial discomfort, the process is benign. / Despite his imposing stature, he had a benign smile.",
+        "synonyms": [
+          "innocuous",
+          "benignant",
+          "gentle",
+          "amiable",
+          "congenial",
+          "cordial"
+        ],
+        "mnemonic": "'Be' + 'nine'. Think of a sweet 9-year-old child. They are harmless, gentle, and kindhearted."
+      },
+      {
+        "word": "brazen",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/brazen-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "shameless and excessively forward",
+        "example": "John's brazen interruptions of his boss' speech were not received well.",
+        "synonyms": [
+          "presumptuous",
+          "brash",
+          "unabashed"
+        ],
+        "mnemonic": "Think of the metal 'Brass'. It is loud, flashy, and bold compared to subtle metals. Someone who is brazen has a loud, shameless personality."
+      },
+      {
+        "word": "calumny",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/calumny-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "slander and defamation",
+        "example": "The tabloid had an axe to grind and thus spread calumny daily.",
+        "synonyms": [
+          "libel",
+          "obloquy",
+          "denigration"
+        ],
+        "mnemonic": "Sounds like 'Kaale Munh' (black face in Hindi). Spreading false rumors to blacken someone's face and destroy their reputation."
+      },
+      {
+        "word": "candid",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/candid-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "honest; without deception",
+        "example": "Honesty is important, but don't be too candid in job interviews.",
+        "synonyms": [
+          "blunt",
+          "forthright",
+          "frank"
+        ],
+        "mnemonic": "Think of 'Candy'. If you give a kid a piece of candy, they will drop all lies and be completely honest and sweet with you."
+      },
+      {
+        "word": "castigate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/castigate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "scold someone harshly",
+        "example": "The entire country castigated the governor for his ill-timed statement.",
+        "synonyms": [
+          "rebuke",
+          "lambast",
+          "berate"
+        ],
+        "mnemonic": "'Cast' + 'gate'. If you improperly 'cast' a metal part in the foundry lab and cause a defect, the professor will scold you all the way to the campus 'gate'."
+      },
+      {
+        "word": "caustic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/caustic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "(of speech) hostile and bitter / (of a chemical) corrosive; acidic",
+        "example": "Reality TV thrives on conflict and caustic discourse between characters. / Care should be taken when handling the caustic substance.",
+        "synonyms": [
+          "derisive",
+          "scathing",
+          "mordant",
+          "stinging",
+          "acrid"
+        ],
+        "mnemonic": "Think of 'caustic soda'. It is a highly corrosive chemical. A person's speech can be just as biting and corrosive to someone's feelings."
+      },
+      {
+        "word": "construe",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/construe-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "understand something subjectively",
+        "example": "It was difficult to construe the retreat as anything but a massive defeat.",
+        "synonyms": [
+          "read",
+          "parse",
+          "decode"
+        ],
+        "mnemonic": "Sounds like 'Construct'. When reading a dense research paper, you have to 'construct' the meaning in your own mind to understand it."
+      },
+      {
+        "word": "contrite",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/contrite-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "feeling regretful or guilty",
+        "example": "Genuinely contrite, the man accepted his sentence without protest.",
+        "synonyms": [
+          "repentant",
+          "rueful",
+          "chastened"
+        ],
+        "mnemonic": "'Count' + 'right'. A cashier miscounted the money, realized their mistake, and felt extremely guilty about not getting the count right."
+      },
+      {
+        "word": "convoluted",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/convoluted-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "difficult to understand or follow",
+        "example": "Rome's roads are a convoluted mess.",
+        "synonyms": [
+          "serpentine",
+          "tortuous",
+          "Byzantine"
+        ],
+        "mnemonic": "Think of the 'volute' casing of a centrifugal pump. The spiral, twisted path makes the fluid flow complex, just like a convoluted argument is hard to follow."
+      },
+      {
+        "word": "covet",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/covet-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "strongly desire; yearn for",
+        "example": "To improve our mental health, let's try to not covet the possessions of others.",
+        "synonyms": [
+          "long for",
+          "hanker for",
+          "ache for"
+        ],
+        "mnemonic": "Sounds like 'Covert' (secret). You covertly desire to have the top rank in your management entrance exams."
+      },
+      {
+        "word": "craven",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/craven-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "lacking bravery; weak-kneed",
+        "example": "The army surrendered but not because the soldiers were craven.",
+        "synonyms": [
+          "quaking",
+          "timid",
+          "lily-livered"
+        ],
+        "mnemonic": "Sounds like 'Cave in'. A coward will quickly 'cave in' under the pressure of a difficult project rather than boldly facing it."
+      },
+      {
+        "word": "decorum",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/decorum-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "politeness and proper behavior",
+        "example": "The mother encouraged her son to have decorum.",
+        "synonyms": [
+          "propriety",
+          "decency",
+          "deportment"
+        ],
+        "mnemonic": "Think of 'Decor'. Just as beautiful decor makes a room look proper and presentable, decorum makes a person's behavior proper."
+      },
+      {
+        "word": "deft",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/deft-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "highly proficient; skilled",
+        "example": "Jane's deft fingers navigate the 88 piano keys effortlessly.",
+        "synonyms": [
+          "adroit",
+          "artful",
+          "dexterous"
+        ],
+        "mnemonic": "Sounds like 'Deaf'. Beethoven was deaf, yet he was incredibly deft (skilled) at composing masterpieces."
+      },
+      {
+        "word": "demur",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/demur-pronunciation.mp3",
+        "part_of_speech": "verb / noun",
+        "definition": "hesitate or object; express doubt / hesitation",
+        "example": "Most employees demurred when asked to undergo daily Covid testing. / The judge asked if there were any objections, and there was a brief demur from the defense attorney before proceeding.",
+        "synonyms": [
+          "take issue with",
+          "cavil",
+          "dissent",
+          "protestation",
+          "dispute",
+          "disinclination"
+        ],
+        "mnemonic": "Think of 'Damn U R wrong'. If you think someone's calculations are incorrect, you will object and demur."
+      },
+      {
+        "word": "derivative",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/derivative-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "based on someone else's work (often used in a negative sense)",
+        "example": "The film is derivative, but proudly so.",
+        "synonyms": [
+          "trite",
+          "imitative",
+          "hackneyed"
+        ],
+        "mnemonic": "Just like in calculus where a derivative is mathematically derived from a base function, a derivative artwork isn't original; it's just copied from something else."
+      },
+      {
+        "word": "desiccate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/desiccate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "dry out; remove all moisture",
+        "example": "The land was thoroughly desiccated.",
+        "synonyms": [
+          "dehydrate",
+          "drain",
+          "parch"
+        ],
+        "mnemonic": "'Desi' + 'cake'. A traditional dry Indian rusk (a desi cake) has absolutely all of its moisture baked out of it."
+      },
+      {
+        "word": "diatribe",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/diatribe-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "an angry rant; verbal abuse",
+        "example": "Her diatribe on the ills of society was too hostile to persuade anyone.",
+        "synonyms": [
+          "tirade",
+          "harangue",
+          "denunciation"
+        ],
+        "mnemonic": "'Dia' (two) + 'tribe'. When two warring tribes meet, their leaders launch into long, angry verbal attacks against each other."
+      },
+      {
+        "word": "incredulous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/incredulous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "doubtful and disbelieving",
+        "example": "People are understandably incredulous at the prospect of intergalactic travel.",
+        "synonyms": [
+          "dubious",
+          "unconvinced",
+          "suspicious"
+        ],
+        "mnemonic": "'In' (not) + 'credit'. You refuse to give 'credit' or belief to a wild story because it seems too impossible."
+      },
+      {
+        "word": "ingenuous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/ingenuous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "naive and lacking experience",
+        "example": "We long for the ingenuous days of our youth.",
+        "synonyms": [
+          "unguarded",
+          "green",
+          "unworldly"
+        ],
+        "mnemonic": "Looks a lot like 'Genuine'. A purely genuine, innocent person who is completely naive to the harsh realities of the world."
+      }
+    ]
+  },
+  {
+    "group": "Group 3",
+    "words": [
+      {
+        "word": "abate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/abate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "decrease in intensity; lessen",
+        "example": "He relied on TV to abate his lonelinesss.",
+        "synonyms": [
+          "subside",
+          "dwindle",
+          "ebb"
+        ],
+        "mnemonic": "Think of a 'battery' (a-bate) losing its charge. Over time, the voltage and power will naturally abate."
+      },
+      {
+        "word": "abjure",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/abjure-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "strongly reject (an idea); forgo",
+        "example": "Under enough pressure, many will abjure their principles.",
+        "synonyms": [
+          "renounce",
+          "relinquish",
+          "forgo"
+        ],
+        "mnemonic": "'Ab' (now) + 'jure' (jury). Swearing formally in front of a jury that you will reject and abandon your previous claims."
+      },
+      {
+        "word": "anomalous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/anomalous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "differing from what is normal; atypical",
+        "example": "Because the results are anomalous, further study is needed.",
+        "synonyms": [
+          "atypical",
+          "aberrant",
+          "exceptional"
+        ],
+        "mnemonic": "Contains 'anomaly'. Getting an efficiency greater than 100% in a thermodynamics lab is highly anomalous and indicates a calculation error."
+      },
+      {
+        "word": "antipathy",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/antipathy-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "profound hostility or hatred",
+        "example": "The two generals harbored significant antipathy toward each other.",
+        "synonyms": [
+          "animosity",
+          "aversion",
+          "enmity"
+        ],
+        "mnemonic": "'Anti' (against) + 'pathy' (feeling, like sympathy). You have strong feelings against something."
+      },
+      {
+        "word": "arcane",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/arcane-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "comprehended by very few people; secret",
+        "example": "The profession keeps things arcane to discourage newcomers.",
+        "synonyms": [
+          "mysterious",
+          "esoteric",
+          "enigmatic"
+        ],
+        "mnemonic": "'Arre, can'. Arre, only a few people can understand this! Just like a highly complex MATLAB script written without any comments."
+      },
+      {
+        "word": "arduous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/arduous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "very challenging; needing great effort",
+        "example": "Military bootcamp is almost always an arduous experience.",
+        "synonyms": [
+          "onerous",
+          "laborious",
+          "taxing"
+        ],
+        "mnemonic": "Sounds like 'Hard for us'. Pushing a broken-down Activa for 3 kilometers in the scorching Ahmedabad heat is an incredibly arduous task."
+      },
+      {
+        "word": "artless",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/artless-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "naive; inexperienced / plain and simple / lacking skill",
+        "example": "His artless comments about politics revealed how naive he was. / The room had an artless quality, furnished only with a simple table. / Her artless attempt at painting made it clear she had never held a brush before.",
+        "synonyms": [
+          "ingenuous",
+          "guileless",
+          "callow",
+          "unadorned",
+          "austere",
+          "unembellished",
+          "crude",
+          "clumsy",
+          "amateurish"
+        ],
+        "mnemonic": "Without 'art' (skill or deception). A completely plain, unpolished piece of steel straight out of casting is artless."
+      },
+      {
+        "word": "ascetic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/ascetic-pronunciation.mp3",
+        "part_of_speech": "adjective / noun",
+        "definition": "(of a lifestyle) very strict and lacking luxury / someone who adopts an ascetic lifestyle",
+        "example": "Despite her vast wealth, she has adopted ascetic tendencies. / The ascetic lived in a small cell, devoid of luxuries.",
+        "synonyms": [
+          "austere",
+          "self-denying",
+          "abstemious",
+          "hermit",
+          "recluse",
+          "celibate"
+        ],
+        "mnemonic": "Sounds a bit like 'Acidic'. An ascetic lifestyle is harsh and strict, like an acidic diet with absolutely no sweet luxuries."
+      },
+      {
+        "word": "assuage",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/assuage-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "decrease a negative feeling / fulfill a certain desire",
+        "example": "The prime minister's speech assuaged the fears of the population. / Only a buffet could assuage his appetite.",
+        "synonyms": [
+          "mitigate",
+          "allay",
+          "palliate",
+          "satisfy",
+          "gratify",
+          "satiate"
+        ],
+        "mnemonic": "Sounds like 'Aansoo' (tears) + 'wash'. Washing away someone's tears helps to comfort and assuage their grief."
+      },
+      {
+        "word": "betray",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/betray-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "unknowingly disclose or reveal",
+        "example": "Her excessive blinking betrayed her nervousness.",
+        "synonyms": [
+          "divulge",
+          "expose",
+          "give away"
+        ],
+        "mnemonic": "'Be' + 'tray'. Accidentally dropping a tray of precision instruments in the manufacturing lab will betray the fact that your hands were shaking."
+      },
+      {
+        "word": "bucolic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/bucolic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "associated with tranquil rural life",
+        "example": "Hoping to escape the city, the couple opted for a bucolic Airbnb.",
+        "synonyms": [
+          "rustic",
+          "pastoral",
+          "idyllic"
+        ],
+        "mnemonic": "Think of a 'Bullock' cart. A peaceful village scene with bullock carts and green fields represents a bucolic lifestyle."
+      },
+      {
+        "word": "burgeon",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/burgeon-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "quickly increase or grow; skyrocket",
+        "example": "Because of technological advancements, crop yields have burgeoned.",
+        "synonyms": [
+          "swell",
+          "proliferate",
+          "mushroom"
+        ],
+        "mnemonic": "Sounds like 'Burger'. If you eat a lot of burgers every day, your waistline will burgeon rapidly."
+      },
+      {
+        "word": "cacophonous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/cacophonous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "extremely noisy; grating",
+        "example": "The parents hated the drumkit because of its cacophonous racket.",
+        "synonyms": [
+          "deafening",
+          "raucous",
+          "discordant"
+        ],
+        "mnemonic": "'Kaka' (uncle) + 'phone'. Your Kaka shouting loudly on his phone on a crowded train creates a highly cacophonous environment."
+      },
+      {
+        "word": "canonize",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/canonize-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "treat like a god; deeply venerate",
+        "example": "The later Roman empire began canonizing its leaders.",
+        "synonyms": [
+          "beatify",
+          "sanctify",
+          "exalt"
+        ],
+        "mnemonic": "Think of a 'Canon' camera. When the paparazzi shoot photos of you with their Canon cameras everywhere you go, society has canonized you as a superstar."
+      },
+      {
+        "word": "censure",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/censure-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "strongly criticize or disapprove",
+        "example": "The senator was publicly censured for her vile remarks.",
+        "synonyms": [
+          "condemn",
+          "chastise",
+          "castigate"
+        ],
+        "mnemonic": "Think of the film 'Censor' board. They heavily criticize and censure scenes they strongly disapprove of."
+      },
+      {
+        "word": "chicanery",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/chicanery-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "using deception to attain a certain goal",
+        "example": "His masterful chicanery allowed the realization of his political goals.",
+        "synonyms": [
+          "duplicity",
+          "subterfuge",
+          "skulduggery"
+        ],
+        "mnemonic": "Sounds like 'Shikari' (hunter). A hunter uses traps, camouflage, and chicanery to deceive and catch their prey."
+      },
+      {
+        "word": "coalesce",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/coalesce-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "bring elements together; unite",
+        "example": "In times of conflict, citizens must coalesce and rally around a common cause.",
+        "synonyms": [
+          "merge",
+          "amalgamate",
+          "converge"
+        ],
+        "mnemonic": "'Coal' + 'less'. To survive using *less coal*, different factories must coalesce and pool their energy resources together."
+      },
+      {
+        "word": "cogent",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/cogent-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "persuasive and clear; compelling",
+        "example": "Known for his cogent essays, the author has considerable influence.",
+        "synonyms": [
+          "sound",
+          "reasoned",
+          "lucid"
+        ],
+        "mnemonic": "'Co' (together) + 'gent' (gentlemen). When smart gentlemen sit together to draft a business plan, the resulting document is very clear, logical, and cogent."
+      },
+      {
+        "word": "compelling",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/compelling-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "persuasive and clear / attracting interest; fascinating",
+        "example": "The argument was not compelling due to its logical fallacies. / The author's compelling storytelling had readers hooked from the first chapter.",
+        "synonyms": [
+          "cogent",
+          "sound",
+          "rational",
+          "enthralling",
+          "captivating",
+          "riveting"
+        ],
+        "mnemonic": "'Come' + 'spell'. A presentation so good that it forces you to come over and leaves you spellbound."
+      },
+      {
+        "word": "contend",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/contend-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "argue a certain point of view; assert / compete / struggle or attempt to overcome something",
+        "example": "The researchers contend that society will collapse by 2050. / Several teams will contend for the championship. / She contended with chronic illness her entire life.",
+        "synonyms": [
+          "assert",
+          "maintain",
+          "affirm",
+          "vie for",
+          "rival",
+          "face off",
+          "wrestle",
+          "battle",
+          "grapple"
+        ],
+        "mnemonic": "'Kaun' (who) + 'trend'. Arguing with rivals over who will trend on social media is contending for the top spot."
+      },
+      {
+        "word": "copious",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/copious-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "existing in great supply; abundant",
+        "example": "The once copious supply of used cars dried up quickly during the pandemic.",
+        "synonyms": [
+          "ample",
+          "myriad",
+          "multitudinous"
+        ],
+        "mnemonic": "'Copy' + 'us'. If the printer makes a thousand copies for us, we will have a copious amount of paper."
+      },
+      {
+        "word": "cosmopolitan",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/cosmopolitan-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "(of a city) highly diverse / (of a person) sophisticated and urbane",
+        "example": "New York City is arguably the most cosmopolitan metropolis in the world. / His cosmopolitan demeanor made him the perfect diplomat.",
+        "synonyms": [
+          "international",
+          "universal",
+          "global",
+          "worldly",
+          "elegant",
+          "refined"
+        ],
+        "mnemonic": "'Cosmo' means universe. A truly cosmopolitan B-school cohort has brilliant minds gathered from all over the universe."
+      },
+      {
+        "word": "deference",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/deference-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "high regard and respect; esteem",
+        "example": "In certain cultures, it's important to treat the elderly with marked deference.",
+        "synonyms": [
+          "courtesy",
+          "veneration",
+          "civility"
+        ],
+        "mnemonic": "Sounds like 'Reference'. You naturally show a lot of deference and respect when speaking to the professor who wrote you a stellar reference letter for your master's program."
+      },
+      {
+        "word": "desultory",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/desultory-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "unplanned; without enthusiasm",
+        "example": "The teacher's desultory instruction did little to inspire the students.",
+        "synonyms": [
+          "halfhearted",
+          "lukewarm",
+          "perfunctory"
+        ],
+        "mnemonic": "'De' + 'result'. Approaching your 6th-semester coursework with a desultory attitude will definitely de-grade your final results."
+      },
+      {
+        "word": "diffident",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/diffident-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "reserved or shy; without confidence",
+        "example": "University forced John to come out of his diffident shell.",
+        "synonyms": [
+          "bashful",
+          "unassuming",
+          "meek"
+        ],
+        "mnemonic": "'Difficult' to be 'confident'. Someone who finds it difficult to assert themselves in group discussions is diffident."
+      },
+      {
+        "word": "dilatory",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/dilatory-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "slow and unhurried; meant to stall",
+        "example": "The filibuster is a dilatory measure designed to impede Congressional operations.",
+        "synonyms": [
+          "sluggish",
+          "indolent",
+          "deferring"
+        ],
+        "mnemonic": "'Delay' + 'tory' (story). When a contractor feeds you a fabricated story just to delay a project, they are using dilatory tactics."
+      },
+      {
+        "word": "equivocate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/equivocate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "speak evasively or dishonestly; avoid taking a stance",
+        "example": "Seasoned sports stars recognize it's best to equivocate when asked pointed questions.",
+        "synonyms": [
+          "prevaricate",
+          "hedge",
+          "waver"
+        ],
+        "mnemonic": "'Equal' + 'vocal'. Being equally vocal in favor of both sides of an argument so that nobody actually knows what your real stance is."
+      },
+      {
+        "word": "polarize",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/polarize-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "separate into two opposing groups",
+        "example": "The inflammatory rhetoric is designed to polarize the populace.",
+        "synonyms": [
+          "divide",
+          "factionalize",
+          "dichotomize"
+        ],
+        "mnemonic": "Think of the North and South 'Poles'. Pushing people's opinions so far apart that they end up on opposite ends of the earth."
+      },
+      {
+        "word": "prodigal",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/prodigal-pronunciation.mp3",
+        "part_of_speech": "adjective / noun",
+        "definition": "carelessly wasteful; extravagant / a person who is excessively wasteful",
+        "example": "Prodigal resource extraction does not benefit an economy long-term. / After years of reckless spending and estrangement, the prodigal returned home.",
+        "synonyms": [
+          "improvident",
+          "imprudent",
+          "profligate",
+          "spendthrift",
+          "wastrel",
+          "profligate"
+        ],
+        "mnemonic": "'Proud' + 'gal/guy'. A proud guy who throws his money around on luxury items instead of investing smartly in TATA Steel or HDFC is being prodigal."
+      },
+      {
+        "word": "verbose",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/verbose-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "excessively talkative; wordy",
+        "example": "The professor's verbose lectures were surprisingly entertaining.",
+        "synonyms": [
+          "loquacious",
+          "garrulous",
+          "voluble"
+        ],
+        "mnemonic": "'Verb' + 'boss'. A manager or boss who uses way too many verbs and drawn-out sentences in a simple email."
+      }
+    ]
+  },
+  {
+    "group": "Group 4",
+    "words": [
+      {
+        "word": "abstain",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/abstain-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "avoid taking part in something",
+        "example": "He has abstained from alcohol for over three years.",
+        "synonyms": [
+          "refrain",
+          "eschew",
+          "shun"
+        ],
+        "mnemonic": "'Ab' (now) + 'stain'. To avoid getting a stain on your pristine white shirt, you must abstain from eating messy street food."
+      },
+      {
+        "word": "approbation",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/approbation-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "appreciation toward someone",
+        "example": "Roman leaders thrived on approbation from the masses.",
+        "synonyms": [
+          "recognition",
+          "commendation",
+          "laudation"
+        ],
+        "mnemonic": "'Approve' + 'Probation'. When you perform well and pass your job probation period, you receive formal approval and approbation from your manager."
+      },
+      {
+        "word": "cherish",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/cherish-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "greatly love or protect something",
+        "example": "We must cherish the memories of youth.",
+        "synonyms": [
+          "revere",
+          "adore",
+          "dote on"
+        ],
+        "mnemonic": "Think of a sweet 'Cherry' on a cake. You save it for last because you greatly love and cherish it."
+      },
+      {
+        "word": "corroborate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/corroborate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "lend support to; bolster",
+        "example": "We've yet to find evidence that corroborates our hypothesis.",
+        "synonyms": [
+          "validate",
+          "substantiate",
+          "reinforce"
+        ],
+        "mnemonic": "'Co' (together) + 'robot'. In modern manufacturing, a co-bot works alongside humans to support and corroborate their assembly efforts."
+      },
+      {
+        "word": "disparate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/disparate-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "different or contrasting",
+        "example": "The politicians' disparate viewpoints could not be reconciled.",
+        "synonyms": [
+          "varying",
+          "divergent",
+          "heterogeneous"
+        ],
+        "mnemonic": "'Dis' + 'part'. If you grab two completely different mechanical parts from the bin, they will not fit together because they are disparate."
+      },
+      {
+        "word": "emulate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/emulate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "imitate someone or something",
+        "example": "To improve in a specific field, simply emulate the actions of the experts.",
+        "synonyms": [
+          "mimic",
+          "parallel",
+          "mirror"
+        ],
+        "mnemonic": "Think of a software 'emulator' on your computer that perfectly imitates an old gaming console. To succeed as an industrialist, you emulate the habits of top CEOs."
+      },
+      {
+        "word": "enervate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/enervate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "sap the energy out of someone; fatigue",
+        "example": "The coach took pride in enervating the players.",
+        "synonyms": [
+          "exhaust",
+          "weary",
+          "enfeeble"
+        ],
+        "mnemonic": "'Energy' + 'evaporate'. Standing near a hot blast furnace during a summer afternoon in Ahmedabad will cause your energy to evaporate, leaving you completely enervated."
+      },
+      {
+        "word": "ephemeral",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/ephemeral-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "extremely shortlasting",
+        "example": "It was an ephemeral thought that quickly melted away.",
+        "synonyms": [
+          "transient",
+          "fleeting",
+          "momentary"
+        ],
+        "mnemonic": "'E' (electronic) + 'fame'. Going viral on social media brings electronic fame that is incredibly short-lasting and ephemeral."
+      },
+      {
+        "word": "fervid",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/fervid-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "excessively energetic or eager",
+        "example": "The leader's fervid pleas did not go unheard.",
+        "synonyms": [
+          "ardent",
+          "fervent",
+          "zealous"
+        ],
+        "mnemonic": "Sounds like 'Fever'. When you have a burning fever of passion for a new business idea, you work on it with fervid energy."
+      },
+      {
+        "word": "garrulous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/garrulous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "tending to talk too much; wordy",
+        "example": "Because she's garrulous, this meeting will take forever.",
+        "synonyms": [
+          "voluble",
+          "long-winded",
+          "verbose"
+        ],
+        "mnemonic": "Sounds like 'Gargle'. Someone who never stops talking sounds like they are endlessly gargling words."
+      },
+      {
+        "word": "incendiary",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/incendiary-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "provocative; causing conflict",
+        "example": "His incendiary words did little to appease their anger.",
+        "synonyms": [
+          "inflammatory",
+          "subversive",
+          "agitational"
+        ],
+        "mnemonic": "Think of an 'Incendiary' bomb designed to start fires. Incendiary remarks are meant to start fiery, explosive conflicts."
+      },
+      {
+        "word": "inimical",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/inimical-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "damaging; hostile in manner or tone",
+        "example": "The entire affair has been inimical to our interests.",
+        "synonyms": [
+          "detrimental",
+          "pernicious",
+          "antagonistic"
+        ],
+        "mnemonic": "Sounds like 'Enemy'. An enemy's actions are always hostile and inimical to your success."
+      },
+      {
+        "word": "intimate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/intimate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "subtly suggest or imply",
+        "example": "The professor intimated there would be a test next week.",
+        "synonyms": [
+          "insinuate",
+          "hint",
+          "allude to"
+        ],
+        "mnemonic": "When two friends are very 'intimate' (close), they don't need to speak loudly; they can just subtly intimate their thoughts to one another."
+      },
+      {
+        "word": "invigorate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/invigorate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "provide energy or vitality to",
+        "example": "Nothing invigorates the body like a good night's rest.",
+        "synonyms": [
+          "revitalize",
+          "vivify",
+          "rejuvenate"
+        ],
+        "mnemonic": "'In' + 'Vigor'. To inject vigor and energy back into a system. A hot cup of chai can invigorate you during an all-night study session."
+      },
+      {
+        "word": "mitigate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/mitigate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "diminish negative feelings or situation",
+        "example": "You can take some medicine to mitigate the pain.",
+        "synonyms": [
+          "alleviate",
+          "attenuate",
+          "allay"
+        ],
+        "mnemonic": "'Mitti' (mud) + 'gate'. Building a gate out of mitti (sandbags) helps to mitigate the damage caused by heavy floodwaters."
+      },
+      {
+        "word": "obsolete",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/obsolete-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "no longer useful; outmoded",
+        "example": "Fax machines are mostly obsolete now.",
+        "synonyms": [
+          "antiquated",
+          "archaic",
+          "anachronistic"
+        ],
+        "mnemonic": "'Ob' + 'so' + 'late'. Oh, this machine is so late to the modern era that it is completely outmoded and obsolete."
+      },
+      {
+        "word": "opaque",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/opaque-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "unclear; hard to comprehend / not able to be seen through",
+        "example": "The scientist's opaque explanation left the audience more confused than enlightened. / The visual evidence is not reliable given the windows were so opaque.",
+        "synonyms": [
+          "puzzling",
+          "baffling",
+          "inexplicable",
+          "blurred",
+          "muddy",
+          "hazy"
+        ],
+        "mnemonic": "'O' + 'pack'. A heavily packed, solid cardboard box is opaque; light cannot pass through it, and you cannot comprehend what is inside."
+      },
+      {
+        "word": "paradigmatic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/paradigmatic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "representing the standard example",
+        "example": "Coconuts, palm trees, and beaches are paradigmatic tropical things.",
+        "synonyms": [
+          "quintessential",
+          "archetypal",
+          "prototypical"
+        ],
+        "mnemonic": "Contains 'Paradigm' (a standard model). A perfectly designed monocoque chassis serves as a paradigmatic example for other engineering students to follow."
+      },
+      {
+        "word": "pedantic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/pedantic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "overly concerned with (minor) details",
+        "example": "The pedantic instruction annoys and frustrates the students.",
+        "synonyms": [
+          "nitpicky",
+          "fastidious",
+          "fussy"
+        ],
+        "mnemonic": "Think of a 'Pandit' who is incredibly strict about following every single minor detail and rule during a puja ceremony."
+      },
+      {
+        "word": "placid",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/placid-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "calm; free from activity or irritation",
+        "example": "Most of us seek placid settings on our vacations.",
+        "synonyms": [
+          "tranquil",
+          "pacific",
+          "still"
+        ],
+        "mnemonic": "Sounds like 'Plastic'. A smooth sheet of plastic has no ripples or waves; it is perfectly calm and placid."
+      },
+      {
+        "word": "polemical",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/polemical-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "giving a strong, controversial opinion",
+        "example": "His work is usually polemical, but this latest is surprisingly neutral.",
+        "synonyms": [
+          "virulent",
+          "corrosive",
+          "scathing"
+        ],
+        "mnemonic": "'Pole' + 'Mic'. Picture an angry politician climbing up a street pole with a mic to shout highly controversial opinions."
+      },
+      {
+        "word": "precipitate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/precipitate-pronunciation.mp3",
+        "part_of_speech": "verb / adjective",
+        "definition": "cause to happen / done quickly or suddenly",
+        "example": "Religious tension precipitated the conflict. / Her precipitate decision to quit her job left her unemployed and full of regret.",
+        "synonyms": [
+          "trigger",
+          "provoke",
+          "occasion",
+          "hasty",
+          "rash",
+          "impetuous"
+        ],
+        "mnemonic": "Think of 'Precipitation' (rain). A heavy downpour happens suddenly and fast, and it can quickly precipitate a flood in the streets."
+      },
+      {
+        "word": "profundity",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/profundity-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "great wisdom or intelligence",
+        "example": "James claims to possess profundity, but his advice often comes from Google.",
+        "synonyms": [
+          "sagacity",
+          "acuity",
+          "percipience"
+        ],
+        "mnemonic": "Related to 'Profound'. A senior professor at PDEU with decades of research experience speaks with great profundity."
+      },
+      {
+        "word": "prophetic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/prophetic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "able to correctly predict the future",
+        "example": "If you collect enough predictions, one will inevitably seem prophetic.",
+        "synonyms": [
+          "prescient",
+          "prognostic",
+          "divinatory"
+        ],
+        "mnemonic": "Derived from 'Prophet'. If your analysis of TATA Steel shares successfully predicts a massive breakout, your friends will call your skills prophetic."
+      },
+      {
+        "word": "prudent",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/prudent-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "wise in decision-making",
+        "example": "Not saving for retirement is simply not prudent.",
+        "synonyms": [
+          "judicious",
+          "sagacious",
+          "shrewd"
+        ],
+        "mnemonic": "Sounds like 'Student'. A good 6th-semester student is highly prudent about balancing their GRE prep time with their mechanical engineering lab work."
+      },
+      {
+        "word": "punctilious",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/punctilious-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "highly concerned with details or manners",
+        "example": "The chef is very punctilious in selecting ingredients.",
+        "synonyms": [
+          "meticulous",
+          "scrupulous",
+          "painstaking"
+        ],
+        "mnemonic": "Contains 'Punctual'. Someone who is obsessively punctual down to the exact second is usually very punctilious about all other details as well."
+      },
+      {
+        "word": "recondite",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/recondite-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "obscure and difficult to understand",
+        "example": "The book is far too recondite to be enjoyed by most.",
+        "synonyms": [
+          "arcane",
+          "obscure",
+          "esoteric"
+        ],
+        "mnemonic": "Think of 'Recon' (military reconnaissance). Recon missions operate in the shadows, gathering complex, hidden information that is recondite to normal citizens."
+      },
+      {
+        "word": "scrupulous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/scrupulous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "careful with details / possessing moral integrity",
+        "example": "He was scrupulous in his research, double-checking every source. / She was scrupulous in her business dealings, always prioritizing honesty.",
+        "synonyms": [
+          "meticulous",
+          "diligent",
+          "thorough",
+          "ethical",
+          "virtuous",
+          "principled"
+        ],
+        "mnemonic": "Think of 'Sculptor'. A master sculptor must be incredibly careful and scrupulous with every single chisel stroke."
+      },
+      {
+        "word": "tranquil",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/tranquil-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "peaceful; free from activity",
+        "example": "A trip to the spa is normally a tranquil experience.",
+        "synonyms": [
+          "reposeful",
+          "serene",
+          "placid"
+        ],
+        "mnemonic": "'Train' + 'Pill'. If you take a sleeping pill during a long train journey, your ride will be deeply peaceful and tranquil."
+      },
+      {
+        "word": "vacillate",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/vacillate-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "go back and forth with one's view",
+        "example": "An expert politician, he vacillated when asked an uncomfortable question.",
+        "synonyms": [
+          "dither",
+          "waver",
+          "oscillate"
+        ],
+        "mnemonic": "Rhymes with 'Oscillate'. An oscillating fan swings back and forth, just like a person who vacillates between two difficult choices."
+      }
+    ]
+  },
+  {
+    "group": "Group 5",
+    "words": [
+      {
+        "word": "aloof",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/aloof-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "not warm or friendly; impersonal",
+        "example": "She sat in the corner, aloof from the rest of us.",
+        "synonyms": [
+          "standoffish",
+          "detached",
+          "withdrawn"
+        ],
+        "mnemonic": "Think of 'A' (no) + 'roof'. Someone who prefers to stand outside alone in the rain rather than under the roof with everyone else is acting aloof."
+      },
+      {
+        "word": "clangor",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/clangor-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "a disturbingly loud noise",
+        "example": "The clangor of the construction site interrupted our conversation.",
+        "synonyms": [
+          "racket",
+          "commotion",
+          "clatter"
+        ],
+        "mnemonic": "Contains 'Clang'. The loud *clang* of heavy metal parts dropping onto the floor of the PDEU manufacturing lab creates a massive clangor."
+      },
+      {
+        "word": "conventional",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/conventional-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "adhering to established practices or accepted standards",
+        "example": "He has very conventional views about education.",
+        "synonyms": [
+          "prosaic",
+          "pedestrian",
+          "formulaic"
+        ],
+        "mnemonic": "Think of conventional machining processes like turning and milling, as opposed to modern, unconventional ones like EDM."
+      },
+      {
+        "word": "debunk",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/debunk-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "prove a belief or idea false",
+        "example": "The scientist debunked the myth that vaccines cause autism.",
+        "synonyms": [
+          "discredit",
+          "controvert",
+          "confute"
+        ],
+        "mnemonic": "'De' + 'bunk'. If you try to 'bunk' your college lab with a fake excuse, a strict professor will quickly debunk your lie."
+      },
+      {
+        "word": "diminutive",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/diminutive-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "exceptionally small in size or stature",
+        "example": "Her diminutive stature did not affect her powerful voice.",
+        "synonyms": [
+          "petite",
+          "minute",
+          "minuscule"
+        ],
+        "mnemonic": "Related to 'Diminish' (make smaller). A 1:10 scale model of a prefabricated cement building is a diminutive version of the real structure."
+      },
+      {
+        "word": "discernible",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/discernible-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "able to be recognized or understood",
+        "example": "There was no discernible change in his attitude.",
+        "synonyms": [
+          "manifest",
+          "evident",
+          "perceptible"
+        ],
+        "mnemonic": "Sounds like 'Discover' + 'able'. When looking at a stress-strain curve for mild steel, the yield point is easily discernible."
+      },
+      {
+        "word": "enigmatic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/enigmatic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "hard to understand; mysterious",
+        "example": "Her silence on the issue was enigmatic.",
+        "synonyms": [
+          "inexplicable",
+          "baffling",
+          "inscrutable"
+        ],
+        "mnemonic": "The 'Enigma' machine was used in WWII to create highly secret, complex codes that were completely enigmatic to the enemy."
+      },
+      {
+        "word": "estranged",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/estranged-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "emotionally distanced from someone",
+        "example": "He became estranged from his family after moving overseas.",
+        "synonyms": [
+          "alienated",
+          "detached",
+          "severed"
+        ],
+        "mnemonic": "'Extra' + 'Range'. You have put extra range (distance) between yourself and your old friends, making you essentially strangers."
+      },
+      {
+        "word": "extravagant",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/extravagant-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "excessive, especially in terms of cost",
+        "example": "His extravagant lifestyle was unsustainable in the long term.",
+        "synonyms": [
+          "profligate",
+          "thriftless",
+          "prodigal"
+        ],
+        "mnemonic": "Spending thousands of rupees on fancy daily coffees when you should be saving up for a Master's in Management abroad is highly extravagant."
+      },
+      {
+        "word": "fanciful",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/fanciful-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "highly imaginative; unrealistic",
+        "example": "His fanciful ideas about living on Mars were amusing.",
+        "synonyms": [
+          "impractical",
+          "flighty",
+          "quixotic"
+        ],
+        "mnemonic": "'Fancy' + 'full'. A business plan for tyre recycling that assumes raw materials will magically teleport to the factory for free is completely fanciful."
+      },
+      {
+        "word": "frivolous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/frivolous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "lacking in seriousness or importance; silly / (of a person) not taking things seriously",
+        "example": "She dismissed his comment as frivolous. / Believing that, in the end, nothing really matters, he's adopted a frivolous attitude.",
+        "synonyms": [
+          "flippant",
+          "facetious",
+          "fatuous",
+          "lighthearted",
+          "whimsical",
+          "zany"
+        ],
+        "mnemonic": "'Free' + 'voice'. Using your voice freely to joke around during a serious engineering lab exam is a frivolous way to act."
+      },
+      {
+        "word": "heterogeneous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/heterogeneous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "composed of varying, diverse elements",
+        "example": "The population of the city is quite heterogeneous.",
+        "synonyms": [
+          "miscellaneous",
+          "divergent",
+          "motley"
+        ],
+        "mnemonic": "'Hetero' (different) + 'geneous' (kind). A composite material like reinforced concrete is highly heterogeneous compared to a pure block of aluminum."
+      },
+      {
+        "word": "imperious",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/imperious-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "having an arrogant or domineering manner",
+        "example": "His imperious demeanor was off-putting to his colleagues.",
+        "synonyms": [
+          "peremptory",
+          "overbearing",
+          "officious"
+        ],
+        "mnemonic": "Sounds like 'Emperor'. An emperor often acts imperious, loudly bossing around his subjects without listening to their opinions."
+      },
+      {
+        "word": "impertinent",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/impertinent-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "disrespectful or inappropriate / irrelevant or unrelated to something",
+        "example": "His impertinent behavior at the meeting shocked everyone. / Employees kept bringing up impertinent issues at the meeting.",
+        "synonyms": [
+          "insolent",
+          "brazen",
+          "impudent",
+          "inapposite",
+          "immaterial",
+          "inapplicable"
+        ],
+        "mnemonic": "'Im' (not) + 'pertinent' (relevant). A junior intern confidently telling a veteran industrialist how to run their personal life is both irrelevant and impertinent."
+      },
+      {
+        "word": "invasive",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/invasive-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "infringing on other's privacy / spreading rapidly and causing harm",
+        "example": "The invasive surveillance techniques used by the government were criticized. / The kudzu vine is an invasive species in the southern United States.",
+        "synonyms": [
+          "meddlesome",
+          "obtrusive",
+          "intrusive",
+          "pervasive",
+          "infiltrative",
+          "penetrative"
+        ],
+        "mnemonic": "Related to 'Invade'. Destructive testing methods are invasive because they permanently alter or break the mechanical component being tested."
+      },
+      {
+        "word": "irresolute",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/irresolute-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "uncertain or lacking determination",
+        "example": "She was irresolute about her decision to move abroad.",
+        "synonyms": [
+          "vacillating",
+          "dithering",
+          "faltering"
+        ],
+        "mnemonic": "'Ir' (not) + 'resolute' (resolved). You have no resolution. Staring at INSEAD and HEC Paris brochures but being irresolute about which to apply to."
+      },
+      {
+        "word": "laudable",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/laudable-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "worthy of admiration or praise",
+        "example": "His efforts to protect the environment were laudable.",
+        "synonyms": [
+          "meritorious",
+          "commendable",
+          "estimable"
+        ],
+        "mnemonic": "Contains 'Laud' (praise). Successfully deriving the governing ODEs for tank drainage and coding them in MATLAB is a highly laudable achievement."
+      },
+      {
+        "word": "lax",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/lax-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "not diligent or careful; casual",
+        "example": "The manager's lax attitude towards safety was a cause for concern.",
+        "synonyms": [
+          "slipshod",
+          "slack",
+          "negligent"
+        ],
+        "mnemonic": "Sounds like 'Relax'. A workshop supervisor who just wants to relax and ignores students not wearing safety shoes is being dangerously lax."
+      },
+      {
+        "word": "marginalize",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/marginalize-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "treat someone or something as insignificant",
+        "example": "They felt marginalized by society because of their religious beliefs.",
+        "synonyms": [
+          "sideline",
+          "disregard",
+          "ostracize"
+        ],
+        "mnemonic": "Pushing someone to the 'margin' (edge) of the paper, making them feel like a completely insignificant part of the team."
+      },
+      {
+        "word": "panache",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/panache-pronunciation.mp3",
+        "part_of_speech": "noun",
+        "definition": "a stylish and confident manner",
+        "example": "The actor performed the role with panache.",
+        "synonyms": [
+          "flamboyance",
+          "self-assurance",
+          "flair"
+        ],
+        "mnemonic": "Think of an old-school Bollywood hero with a great mustache, chewing paan, and delivering his dialogue with pure panache."
+      },
+      {
+        "word": "plodding",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/plodding-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "moving slowly or laboriously",
+        "example": "The plodding pace of the meeting made him feel sleepy.",
+        "synonyms": [
+          "lumbering",
+          "slogging",
+          "ambling"
+        ],
+        "mnemonic": "Sounds like 'Plotting' along. A heavy tractor plotting through a muddy field moves at a very plodding pace compared to your Activa 3G on a highway."
+      },
+      {
+        "word": "prosaic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/prosaic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "straightforward; unoriginal; unimaginative",
+        "example": "His speech was prosaic, devoid of any rhetorical flourish.",
+        "synonyms": [
+          "mundane",
+          "humdrum",
+          "pedestrian"
+        ],
+        "mnemonic": "'Prose' instead of poetry. A standard, dry engineering lab report is usually quite prosaic and entirely lacking in creativity."
+      },
+      {
+        "word": "remedial",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/remedial-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "serving to correct or cure something",
+        "example": "She was placed in a remedial reading class to improve her skills.",
+        "synonyms": [
+          "restorative",
+          "palliative",
+          "rectifying"
+        ],
+        "mnemonic": "From the word 'Remedy' (cure). If you fail your machine design midterm, you might have to take remedial classes to fix your grades."
+      },
+      {
+        "word": "restive",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/restive-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "demonstrating difficulty in staying still",
+        "example": "The audience grew restive as the presentation continued.",
+        "synonyms": [
+          "restless",
+          "agitated",
+          "skittish"
+        ],
+        "mnemonic": "'Rest' + 'ive'. Paradoxically, it means wanting to break *out* of resting. Waiting for an hour in a crowded Ahmedabad office makes people highly restive."
+      },
+      {
+        "word": "sporadic",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/sporadic-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "happening occasionally and irregularly",
+        "example": "There have been sporadic outbreaks of the disease.",
+        "synonyms": [
+          "occasional",
+          "intermittent",
+          "scattered"
+        ],
+        "mnemonic": "Sounds like 'Spores' blowing in the wind. They don't fall in a steady pattern; they land randomly and sporadically."
+      },
+      {
+        "word": "stigmatize",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/stigmatize-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "label or mark as disgraceful",
+        "example": "The campaign aims to stigmatize smoking in public areas.",
+        "synonyms": [
+          "condemn",
+          "disparage",
+          "pillory"
+        ],
+        "mnemonic": "From 'Stigma' (a mark of shame). In the past, people would stigmatize failed business ventures, but modern industrialists know failure is just part of the process."
+      },
+      {
+        "word": "undermine",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/undermine-pronunciation.mp3",
+        "part_of_speech": "verb",
+        "definition": "weaken or sabotage, often subtly",
+        "example": "The constant criticism served to undermine her confidence.",
+        "synonyms": [
+          "subvert",
+          "compromise",
+          "impair"
+        ],
+        "mnemonic": "'Under' + 'mine'. Literally digging a coal mine directly underneath a prefabricated building to slowly and subtly weaken its foundation."
+      },
+      {
+        "word": "utterly",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/utterly-pronunciation.mp3",
+        "part_of_speech": "adverb",
+        "definition": "completely and without exception",
+        "example": "He was utterly convinced of his own success.",
+        "synonyms": [
+          "wholly",
+          "absolutely",
+          "outright"
+        ],
+        "mnemonic": "When a complex Python code to calculate vibrations runs perfectly on the very first try, you are left utterly speechless."
+      },
+      {
+        "word": "weary",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/weary-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "feeling tired or exhausted",
+        "example": "After the long journey, they were weary and ready to rest.",
+        "synonyms": [
+          "fatigued",
+          "sapped",
+          "enervated"
+        ],
+        "mnemonic": "After you 'wear' out your tyres traveling 14 km a day on your scooter, you feel completely weary from the bumpy ride."
+      },
+      {
+        "word": "zealous",
+        "audio_url": "https://gregmat-polly.s3.amazonaws.com/zealous-pronunciation.mp3",
+        "part_of_speech": "adjective",
+        "definition": "intensely passionate",
+        "example": "She was a zealous advocate for human rights.",
+        "synonyms": [
+          "fervent",
+          "ardent",
+          "fervid"
+        ],
+        "mnemonic": "Contains 'Zeal'. To score a 320+ on the GRE and secure admission into a top management program, you must be absolutely zealous about your preparation."
+      }
+    ]
+  }
+]
