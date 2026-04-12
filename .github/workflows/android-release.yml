@@ -36,6 +36,14 @@ jobs:
           java-version: '17'
           cache: gradle
 
+      - name: Increase Gradle JVM memory
+        run: |
+          if grep -q '^org.gradle.jvmargs=' android/gradle.properties; then
+            sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8|' android/gradle.properties
+          else
+            echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" >> android/gradle.properties
+          fi
+
       - name: Build APK
         run: |
           test -f android/gradlew
