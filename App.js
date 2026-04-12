@@ -28,10 +28,31 @@ const STATE_LABELS = {
   learning: 'Learning',
 };
 
+const STUDY_MODES = {
+  flashcard: 'flashcard',
+  quiz: 'quiz',
+};
+
 const STORAGE_KEYS = {
   statuses: (groupName) => `gre/statuses/${groupName}`,
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
 };
+
+function shuffleArray(values) {
+  const next = [...values];
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+}
+
+function normalizeCardIndex(index, total) {
+  if (!total) {
+    return 0;
+  }
+  return ((index % total) + total) % total;
+}
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -46,9 +67,14 @@ export default function App() {
   const [error, setError] = useState('');
 
   const [selectedGroupIndex, setSelectedGroupIndex] = useState(null);
+  const [studyMode, setStudyMode] = useState(null);
   const [statuses, setStatuses] = useState({});
   const [cardIndex, setCardIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
+  const [quizOptions, setQuizOptions] = useState([]);
+  const [quizSelectedOption, setQuizSelectedOption] = useState('');
+  const [quizResult, setQuizResult] = useState(null);
+  const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
 
   const soundRef = useRef(null);
 
@@ -56,13 +82,24 @@ export default function App() {
     selectedGroupIndex === null ? null : groups[selectedGroupIndex] ?? null;
   const words = selectedGroup?.words ?? [];
   const totalWords = words.length;
+  const uniqueDefinitionCount = useMemo(
+    () =>
+      new Set(
+        groups
+          .flatMap((group) => group.words ?? [])
+          .map((item) => item.definition)
+          .filter(Boolean)
+      ).size,
+    [groups]
+  );
+  const canPlayQuiz = uniqueDefinitionCount >= 4;
 
   const currentWord = useMemo(() => {
     const wordCount = words.length;
     if (!wordCount) {
       return null;
     }
-    const normalizedIndex = ((cardIndex % wordCount) + wordCount) % wordCount;
+    const normalizedIndex = normalizeCardIndex(cardIndex, wordCount);
     return words[normalizedIndex];
   }, [cardIndex, words]);
 
@@ -111,6 +148,12 @@ export default function App() {
     };
   }, []);
 
+  const resetQuizState = useCallback(() => {
+    setQuizOptions([]);
+    setQuizSelectedOption('');
+    setQuizResult(null);
+  }, []);
+
   const persistGroupProgress = useCallback(
     async (nextStatuses, nextCardIndex) => {
       if (!selectedGroup) {
@@ -141,7 +184,10 @@ export default function App() {
     }
 
     setSelectedGroupIndex(groupIndex);
+    setStudyMode(null);
     setShowDetails(false);
+    resetQuizState();
+    setQuizScore({ correct: 0, total: 0 });
 
     try {
       const [savedStatuses, savedCardIndex] = await AsyncStorage.multiGet([
@@ -166,12 +212,15 @@ export default function App() {
       setCardIndex(0);
       setError('Could not read saved progress for this deck.');
     }
-  }, [groups]);
+  }, [groups, resetQuizState]);
 
   const backToDecks = useCallback(() => {
     setSelectedGroupIndex(null);
+    setStudyMode(null);
     setShowDetails(false);
-  }, []);
+    resetQuizState();
+    setQuizScore({ correct: 0, total: 0 });
+  }, [resetQuizState]);
 
   const playPronunciation = useCallback(async () => {
     if (!currentWord?.audio_url) {
@@ -194,6 +243,47 @@ export default function App() {
     }
   }, [currentWord]);
 
+  useEffect(() => {
+    if (!currentWord || studyMode !== STUDY_MODES.quiz) {
+      resetQuizState();
+      return;
+    }
+
+    const correctDefinition = currentWord.definition;
+    const allDefinitions = Array.from(
+      new Set(
+        groups
+          .flatMap((group) => group.words ?? [])
+          .map((item) => item.definition)
+          .filter((definition) => definition && definition !== correctDefinition)
+      )
+    );
+
+    const deckDefinitions = Array.from(
+      new Set(
+        words
+          .filter((item) => item.word !== currentWord.word)
+          .map((item) => item.definition)
+          .filter((definition) => definition && definition !== correctDefinition)
+      )
+    );
+
+    const incorrectDefinitions = shuffleArray(
+      Array.from(
+        new Set([...deckDefinitions, ...allDefinitions])
+      )
+    ).slice(0, 3);
+
+    if (incorrectDefinitions.length < 3) {
+      resetQuizState();
+      return;
+    }
+
+    setQuizOptions(shuffleArray([correctDefinition, ...incorrectDefinitions]));
+    setQuizSelectedOption('');
+    setQuizResult(null);
+  }, [currentWord, groups, resetQuizState, studyMode, words]);
+
   const classifyWord = useCallback(
     async (state) => {
       if (!currentWord || !selectedGroup) {
@@ -207,7 +297,7 @@ export default function App() {
       if (!totalWords) {
         return;
       }
-      const normalizedCardIndex = cardIndex >= 0 ? cardIndex % totalWords : 0;
+      const normalizedCardIndex = normalizeCardIndex(cardIndex, totalWords);
       const nextCardIndex = (normalizedCardIndex + 1) % totalWords;
 
       setStatuses(nextStatuses);
@@ -216,6 +306,57 @@ export default function App() {
       await persistGroupProgress(nextStatuses, nextCardIndex);
     },
     [cardIndex, currentWord, persistGroupProgress, selectedGroup, statuses, totalWords]
+  );
+
+  const selectMode = useCallback(
+    (mode) => {
+      if (mode === STUDY_MODES.quiz && !canPlayQuiz) {
+        return;
+      }
+      setStudyMode(mode);
+      setShowDetails(false);
+      resetQuizState();
+    },
+    [canPlayQuiz, resetQuizState]
+  );
+
+  const backToModes = useCallback(() => {
+    setStudyMode(null);
+    setShowDetails(false);
+    resetQuizState();
+  }, [resetQuizState]);
+
+  const submitQuizAnswer = useCallback(
+    (selectedDefinition) => {
+      if (!currentWord || quizResult !== null) {
+        return;
+      }
+
+      const isCorrect = selectedDefinition === currentWord.definition;
+      setQuizSelectedOption(selectedDefinition);
+      setQuizResult(isCorrect ? 'correct' : 'incorrect');
+      setQuizScore((prev) => ({
+        correct: prev.correct + (isCorrect ? 1 : 0),
+        total: prev.total + 1,
+      }));
+    },
+    [currentWord, quizResult]
+  );
+
+  const nextQuizWord = useCallback(async () => {
+    if (!totalWords) {
+      return;
+    }
+    const normalizedCardIndex = normalizeCardIndex(cardIndex, totalWords);
+    const nextCardIndex = (normalizedCardIndex + 1) % totalWords;
+    setCardIndex(nextCardIndex);
+    await persistGroupProgress(statuses, nextCardIndex);
+  }, [cardIndex, persistGroupProgress, statuses, totalWords]);
+
+  const pronunciationButton = (
+    <Pressable style={styles.audioButton} onPress={playPronunciation}>
+      <Text style={styles.audioButtonText}>▶ Play Pronunciation</Text>
+    </Pressable>
   );
 
   if (!fontsLoaded) {
@@ -252,80 +393,176 @@ export default function App() {
         {selectedGroup ? (
           <View style={styles.deckScreen}>
             <View style={styles.headerRow}>
-              <Pressable onPress={backToDecks}>
-                <Text style={styles.backText}>← Decks</Text>
+              <Pressable onPress={studyMode ? backToModes : backToDecks}>
+                <Text style={styles.backText}>{studyMode ? '← Modes' : '← Decks'}</Text>
               </Pressable>
               <Text style={styles.groupTitle}>{selectedGroup.group}</Text>
             </View>
 
-            {currentWord ? (
+            {!studyMode ? (
+              <View style={styles.modeList}>
+                <Text style={styles.sectionTitle}>Choose a study mode</Text>
+                <Pressable
+                  style={styles.modeCard}
+                  onPress={() => selectMode(STUDY_MODES.flashcard)}
+                >
+                  <Text style={styles.modeCardTitle}>Flash Cards</Text>
+                  <Text style={styles.modeCardMeta}>
+                    Tap to reveal details and mark each word.
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modeCard, !canPlayQuiz && styles.modeCardDisabled]}
+                  onPress={() => selectMode(STUDY_MODES.quiz)}
+                  disabled={!canPlayQuiz}
+                  accessibilityState={{ disabled: !canPlayQuiz }}
+                  accessibilityLabel={
+                    canPlayQuiz
+                      ? 'Meaning quiz mode'
+                      : 'Meaning quiz mode disabled, requires at least 4 unique definitions'
+                  }
+                >
+                  <Text style={styles.modeCardTitle}>Meaning Quiz</Text>
+                  <Text style={styles.modeCardMeta}>
+                    Choose the correct definition from options.
+                  </Text>
+                  {!canPlayQuiz ? (
+                    <Text style={styles.modeCardWarning}>
+                      Quiz needs at least 4 unique definitions.
+                    </Text>
+                  ) : null}
+                </Pressable>
+              </View>
+            ) : currentWord ? (
               <>
-                <Pressable style={styles.card} onPress={() => setShowDetails((prev) => !prev)}>
-                  <View style={styles.cardTag}>
-                    <Text style={styles.cardTagText}>
-                      {STATE_LABELS[statuses[currentWord.word]] ?? 'Unseen'}
+                {studyMode === STUDY_MODES.flashcard ? (
+                  <>
+                    <Pressable
+                      style={styles.card}
+                      onPress={() => setShowDetails((prev) => !prev)}
+                    >
+                      <View style={styles.cardTag}>
+                        <Text style={styles.cardTagText}>
+                          {STATE_LABELS[statuses[currentWord.word]] ?? 'Unseen'}
+                        </Text>
+                      </View>
+                      <Text style={styles.wordText}>{currentWord.word}</Text>
+                      {!showDetails ? (
+                        <Text style={styles.tapHint}>Tap to reveal meaning →</Text>
+                      ) : (
+                        <View style={styles.detailsWrap}>
+                          <Text style={styles.detailText}>
+                            ({currentWord.part_of_speech}) {currentWord.definition}
+                          </Text>
+                          <Text style={styles.detailText}>Example: {currentWord.example}</Text>
+                          <Text style={styles.detailText}>Mnemonic: {currentWord.mnemonic}</Text>
+                          <Text style={styles.detailText}>
+                            Synonyms: {(currentWord.synonyms ?? []).join(', ')}
+                          </Text>
+                        </View>
+                      )}
+                    </Pressable>
+
+                    {pronunciationButton}
+
+                    <View style={styles.progressArea}>
+                      {['mastered', 'reviewing', 'learning'].map((stateKey) => {
+                        const value = counts[stateKey];
+                        return (
+                          <View style={styles.progressRow} key={stateKey}>
+                            <Text style={styles.progressLabel}>
+                              You have {STATE_LABELS[stateKey].toLowerCase()} {value} out of{' '}
+                              {totalWords} words
+                            </Text>
+                            <View style={styles.progressTrack}>
+                              <View
+                                style={[
+                                  styles.progressFill,
+                                  { width: `${totalWords ? (value / totalWords) * 100 : 0}%` },
+                                ]}
+                              />
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+
+                    <View style={styles.actionRow}>
+                      <Pressable
+                        style={[styles.actionButton, styles.masteredButton]}
+                        onPress={() => classifyWord('mastered')}
+                      >
+                        <Text style={styles.actionText}>I Know</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.actionButton, styles.reviewButton]}
+                        onPress={() => classifyWord('reviewing')}
+                      >
+                        <Text style={styles.actionText}>Review</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.actionButton, styles.learnButton]}
+                        onPress={() => classifyWord('learning')}
+                      >
+                        <Text style={styles.actionText}>Learn</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.quizWrap}>
+                    <View style={styles.card}>
+                      <Text style={styles.quizPrompt}>Choose the correct meaning</Text>
+                      <Text style={styles.wordText}>{currentWord.word}</Text>
+                    </View>
+
+                    {pronunciationButton}
+
+                    <View style={styles.quizOptionsWrap}>
+                      {quizOptions.length ? (
+                        quizOptions.map((option) => {
+                          const isSelected = quizSelectedOption === option;
+                          const isCorrectOption = option === currentWord.definition;
+                          return (
+                            <Pressable
+                              key={option}
+                              style={[
+                                styles.quizOption,
+                                isSelected && !isCorrectOption && styles.quizOptionWrong,
+                                quizSelectedOption && isCorrectOption && styles.quizOptionCorrect,
+                              ]}
+                              onPress={() => submitQuizAnswer(option)}
+                            >
+                              <Text style={styles.quizOptionText}>{option}</Text>
+                            </Pressable>
+                          );
+                        })
+                      ) : (
+                        <Text style={styles.infoText}>
+                          Quiz options are unavailable for this word.
+                        </Text>
+                      )}
+                    </View>
+
+                    {quizResult ? (
+                      <View style={styles.quizFeedback}>
+                        <Text style={styles.quizFeedbackTitle}>
+                          {quizResult === 'correct' ? 'Correct ✅' : 'Not quite ❌'}
+                        </Text>
+                        <Text style={styles.quizFeedbackText}>
+                          Answer: {currentWord.definition}
+                        </Text>
+                        <Text style={styles.quizFeedbackText}>Example: {currentWord.example}</Text>
+                        <Pressable style={styles.nextButton} onPress={nextQuizWord}>
+                          <Text style={styles.nextButtonText}>Next Word</Text>
+                        </Pressable>
+                      </View>
+                    ) : null}
+
+                    <Text style={styles.quizScoreText}>
+                      Score: {quizScore.correct}/{quizScore.total}
                     </Text>
                   </View>
-                  <Text style={styles.wordText}>{currentWord.word}</Text>
-                  {!showDetails ? (
-                    <Text style={styles.tapHint}>Tap to reveal meaning →</Text>
-                  ) : (
-                    <View style={styles.detailsWrap}>
-                      <Text style={styles.detailText}>({currentWord.part_of_speech}) {currentWord.definition}</Text>
-                      <Text style={styles.detailText}>Example: {currentWord.example}</Text>
-                      <Text style={styles.detailText}>Mnemonic: {currentWord.mnemonic}</Text>
-                      <Text style={styles.detailText}>
-                        Synonyms: {(currentWord.synonyms ?? []).join(', ')}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-
-                <Pressable style={styles.audioButton} onPress={playPronunciation}>
-                  <Text style={styles.audioButtonText}>▶ Play Pronunciation</Text>
-                </Pressable>
-
-                <View style={styles.progressArea}>
-                  {['mastered', 'reviewing', 'learning'].map((stateKey) => {
-                    const value = counts[stateKey];
-                    return (
-                      <View style={styles.progressRow} key={stateKey}>
-                        <Text style={styles.progressLabel}>
-                          You have {STATE_LABELS[stateKey].toLowerCase()} {value} out of {totalWords} words
-                        </Text>
-                        <View style={styles.progressTrack}>
-                          <View
-                            style={[
-                              styles.progressFill,
-                              { width: `${totalWords ? (value / totalWords) * 100 : 0}%` },
-                            ]}
-                          />
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-
-                <View style={styles.actionRow}>
-                  <Pressable
-                    style={[styles.actionButton, styles.masteredButton]}
-                    onPress={() => classifyWord('mastered')}
-                  >
-                    <Text style={styles.actionText}>I Know</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.actionButton, styles.reviewButton]}
-                    onPress={() => classifyWord('reviewing')}
-                  >
-                    <Text style={styles.actionText}>Review</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.actionButton, styles.learnButton]}
-                    onPress={() => classifyWord('learning')}
-                  >
-                    <Text style={styles.actionText}>Learn</Text>
-                  </Pressable>
-                </View>
+                )}
               </>
             ) : (
               <Text style={styles.infoText}>No words found in this deck.</Text>
@@ -337,6 +574,7 @@ export default function App() {
             <FlatList
               data={groups}
               keyExtractor={(item, index) => `${item.group}-${index}`}
+              contentContainerStyle={styles.deckListContent}
               renderItem={({ item, index }) => (
                 <Pressable style={styles.deckButton} onPress={() => openGroup(index)}>
                   <Text style={styles.deckTitle}>{item.group}</Text>
@@ -384,12 +622,16 @@ const styles = StyleSheet.create({
   deckListWrap: {
     flex: 1,
   },
+  deckListContent: {
+    paddingBottom: 20,
+  },
   deckButton: {
     borderWidth: 1,
     borderColor: '#252525',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    marginBottom: 14,
     backgroundColor: '#101010',
   },
   deckTitle: {
@@ -404,6 +646,36 @@ const styles = StyleSheet.create({
   },
   deckScreen: {
     flex: 1,
+  },
+  modeList: {
+    gap: 12,
+  },
+  modeCard: {
+    borderWidth: 1,
+    borderColor: '#252525',
+    borderRadius: 18,
+    padding: 18,
+    backgroundColor: '#101010',
+  },
+  modeCardDisabled: {
+    opacity: 0.55,
+  },
+  modeCardTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontFamily: 'Poppins_600SemiBold',
+  },
+  modeCardMeta: {
+    marginTop: 6,
+    color: '#bcbcbc',
+    fontSize: 13,
+    fontFamily: 'Poppins_400Regular',
+  },
+  modeCardWarning: {
+    marginTop: 8,
+    color: '#ffb2b2',
+    fontSize: 12,
+    fontFamily: 'Poppins_500Medium',
   },
   headerRow: {
     flexDirection: 'row',
@@ -422,28 +694,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_600SemiBold',
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    backgroundColor: '#101010',
+    borderRadius: 16,
     padding: 16,
     minHeight: 220,
     borderWidth: 1,
-    borderColor: '#dadada',
+    borderColor: '#2a2a2a',
   },
   cardTag: {
     alignSelf: 'flex-end',
-    backgroundColor: '#eee',
+    backgroundColor: '#212121',
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   cardTagText: {
-    color: '#111',
+    color: '#fff',
     fontSize: 11,
     textTransform: 'uppercase',
     fontFamily: 'Poppins_600SemiBold',
   },
   wordText: {
-    color: '#000',
+    color: '#fff',
     fontSize: 34,
     textAlign: 'center',
     marginTop: 20,
@@ -452,7 +724,7 @@ const styles = StyleSheet.create({
   },
   tapHint: {
     textAlign: 'center',
-    color: '#555',
+    color: '#b5b5b5',
     fontSize: 14,
     marginTop: 10,
     fontFamily: 'Poppins_400Regular',
@@ -462,7 +734,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailText: {
-    color: '#1b1b1b',
+    color: '#f1f1f1',
     fontSize: 13,
     lineHeight: 20,
     fontFamily: 'Poppins_400Regular',
@@ -496,13 +768,13 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#303030',
     borderRadius: 999,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#222',
+    backgroundColor: '#fff',
     borderRadius: 999,
   },
   actionRow: {
@@ -522,12 +794,12 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
   },
   reviewButton: {
-    backgroundColor: '#d9d9d9',
-    borderColor: '#d9d9d9',
+    backgroundColor: '#d5d5d5',
+    borderColor: '#d5d5d5',
   },
   learnButton: {
-    backgroundColor: '#7e7e7e',
-    borderColor: '#7e7e7e',
+    backgroundColor: '#9f9f9f',
+    borderColor: '#9f9f9f',
   },
   actionText: {
     color: '#000',
@@ -535,6 +807,74 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   infoText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontFamily: 'Poppins_500Medium',
+  },
+  quizWrap: {
+    flex: 1,
+  },
+  quizPrompt: {
+    color: '#bfbfbf',
+    textAlign: 'center',
+    fontFamily: 'Poppins_500Medium',
+  },
+  quizOptionsWrap: {
+    gap: 10,
+  },
+  quizOption: {
+    borderWidth: 1,
+    borderColor: '#2b2b2b',
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: '#111',
+  },
+  quizOptionCorrect: {
+    borderColor: '#5cc48c',
+    backgroundColor: '#0f2519',
+  },
+  quizOptionWrong: {
+    borderColor: '#d86d6d',
+    backgroundColor: '#2d1616',
+  },
+  quizOptionText: {
+    color: '#fff',
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: 'Poppins_400Regular',
+  },
+  quizFeedback: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#2f2f2f',
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#111',
+    gap: 6,
+  },
+  quizFeedbackTitle: {
+    color: '#fff',
+    fontFamily: 'Poppins_600SemiBold',
+  },
+  quizFeedbackText: {
+    color: '#d7d7d7',
+    fontSize: 13,
+    fontFamily: 'Poppins_400Regular',
+  },
+  nextButton: {
+    marginTop: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fff',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  nextButtonText: {
+    color: '#fff',
+    fontFamily: 'Poppins_600SemiBold',
+  },
+  quizScoreText: {
+    marginTop: 10,
     color: '#fff',
     textAlign: 'center',
     fontFamily: 'Poppins_500Medium',
