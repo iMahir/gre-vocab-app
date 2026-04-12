@@ -11,7 +11,9 @@ The app fetches words with the Fetch API from:
 ## Features
 
 - Deck/group selection from GRE word groups
-- Tap card to reveal definition, example, mnemonic, and synonyms
+- Separate study modes per deck:
+  - **Flash Cards**: tap card to reveal definition, example, mnemonic, and synonyms
+  - **Meaning Quiz**: choose the correct definition from multiple options
 - Mark words as **Mastered**, **Reviewing**, or **Learning**
 - Progress bars per deck for all three learning states
 - Pronunciation audio playback
