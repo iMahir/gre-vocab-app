@@ -2,16 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
+  Modal,
+  PanResponder,
   Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
+  Vibration,
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
+import * as Updates from 'expo-updates';
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -48,6 +53,8 @@ const STORAGE_KEYS = {
 
 // Minimum flex value so a zero-count segment stays visible as a sliver
 const MIN_PROGRESS_FLEX = 0.01;
+const QUIZ_SUMMARY_INTERVAL = 10;
+const SWIPE_THRESHOLD = 90;
 
 function shuffleArray(values) {
   const next = [...values];
@@ -87,10 +94,16 @@ export default function App() {
   const [quizSelectedOption, setQuizSelectedOption] = useState('');
   const [quizResult, setQuizResult] = useState(null);
   const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
+  const [quizSummary, setQuizSummary] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [updatePromptVisible, setUpdatePromptVisible] = useState(false);
+  const [updatingNow, setUpdatingNow] = useState(false);
 
   const soundRef = useRef(null);
   const autoAdvanceRef = useRef(null);
+  const swipeBusyRef = useRef(false);
+  const flipAnim = useRef(new Animated.Value(0)).current;
+  const pan = useRef(new Animated.ValueXY()).current;
 
   const selectedGroup =
     selectedGroupIndex === null ? null : groups[selectedGroupIndex] ?? null;
@@ -155,6 +168,17 @@ export default function App() {
     [allWordsCount, globalCounts]
   );
 
+  const globalPercentages = useMemo(() => {
+    if (!allWordsCount) {
+      return { mastered: 0, reviewing: 0, learning: 0 };
+    }
+    return {
+      mastered: Math.round((globalCounts.mastered / allWordsCount) * 100),
+      reviewing: Math.round((globalCounts.reviewing / allWordsCount) * 100),
+      learning: Math.round((globalCounts.learning / allWordsCount) * 100),
+    };
+  }, [allWordsCount, globalCounts]);
+
   // Search Logic
   const filteredSearchWords = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -199,6 +223,35 @@ export default function App() {
   }, [loadWords]);
 
   useEffect(() => {
+    if (__DEV__) return;
+
+    let mounted = true;
+    const checkForUpdates = async () => {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (mounted && update.isAvailable) {
+          setUpdatePromptVisible(true);
+        }
+      } catch {
+        // Ignore update check errors in environments that do not support OTA checks
+      }
+    };
+
+    checkForUpdates();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    Animated.timing(flipAnim, {
+      toValue: showDetails ? 1 : 0,
+      duration: 320,
+      useNativeDriver: true,
+    }).start();
+  }, [flipAnim, showDetails]);
+
+  useEffect(() => {
     return () => {
       if (soundRef.current) {
         soundRef.current.unloadAsync();
@@ -210,9 +263,14 @@ export default function App() {
   }, []);
 
   const resetQuizState = useCallback(() => {
+    if (autoAdvanceRef.current !== null) {
+      clearTimeout(autoAdvanceRef.current);
+      autoAdvanceRef.current = null;
+    }
     setQuizOptions([]);
     setQuizSelectedOption('');
     setQuizResult(null);
+    setQuizSummary(null);
   }, []);
 
   const persistGroupProgress = useCallback(
@@ -245,6 +303,8 @@ export default function App() {
     setSelectedGroupIndex(groupIndex);
     setStudyMode(null);
     setShowDetails(false);
+    flipAnim.setValue(0);
+    pan.setValue({ x: 0, y: 0 });
     resetQuizState();
     setQuizScore({ correct: 0, total: 0 });
 
@@ -271,16 +331,18 @@ export default function App() {
       setCardIndex(0);
       setError('Could not read saved progress for this deck.');
     }
-  }, [groups, resetQuizState]);
+  }, [flipAnim, groups, pan, resetQuizState]);
 
   const backToDecks = useCallback(() => {
     setSelectedGroupIndex(null);
     setStudyMode(null);
     setShowDetails(false);
+    flipAnim.setValue(0);
+    pan.setValue({ x: 0, y: 0 });
     resetQuizState();
     setQuizScore({ correct: 0, total: 0 });
     setSearchQuery('');
-  }, [resetQuizState]);
+  }, [flipAnim, pan, resetQuizState]);
 
   const playPronunciation = useCallback(async () => {
     if (!currentWord?.audio_url) return;
@@ -352,9 +414,81 @@ export default function App() {
       setStatuses(nextStatuses);
       setCardIndex(nextCardIndex);
       setShowDetails(false);
+      flipAnim.setValue(0);
+      pan.setValue({ x: 0, y: 0 });
       await persistGroupProgress(nextStatuses, nextCardIndex);
     },
-    [cardIndex, currentWord, persistGroupProgress, selectedGroup, statuses, totalWords]
+    [cardIndex, currentWord, flipAnim, pan, persistGroupProgress, selectedGroup, statuses, totalWords]
+  );
+
+  const classifyBySwipe = useCallback(
+    (state, toValue) => {
+      if (swipeBusyRef.current) return;
+      swipeBusyRef.current = true;
+
+      Animated.timing(pan, {
+        toValue,
+        duration: 180,
+        useNativeDriver: true,
+      }).start(async () => {
+        await classifyWord(state);
+        pan.setValue({ x: 0, y: 0 });
+        swipeBusyRef.current = false;
+      });
+    },
+    [classifyWord, pan]
+  );
+
+  const resetSwipePosition = useCallback(() => {
+    Animated.spring(pan, {
+      toValue: { x: 0, y: 0 },
+      useNativeDriver: true,
+      friction: 6,
+    }).start();
+  }, [pan]);
+
+  const applyAvailableUpdate = useCallback(async () => {
+    setUpdatingNow(true);
+    try {
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    } catch {
+      setError('Update download failed. Please try again.');
+      setUpdatePromptVisible(false);
+      setUpdatingNow(false);
+    }
+  }, []);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          studyMode === STUDY_MODES.flashcard &&
+          (Math.abs(gestureState.dx) > 8 || Math.abs(gestureState.dy) > 8),
+        onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
+          useNativeDriver: false,
+        }),
+        onPanResponderRelease: (_, gestureState) => {
+          const { dx, dy } = gestureState;
+          const absDx = Math.abs(dx);
+          const absDy = Math.abs(dy);
+
+          if (absDx > absDy && dx >= SWIPE_THRESHOLD) {
+            classifyBySwipe('mastered', { x: 500, y: 0 });
+            return;
+          }
+          if (absDx > absDy && dx <= -SWIPE_THRESHOLD) {
+            classifyBySwipe('learning', { x: -500, y: 0 });
+            return;
+          }
+          if (dy >= SWIPE_THRESHOLD) {
+            classifyBySwipe('reviewing', { x: 0, y: 500 });
+            return;
+          }
+          resetSwipePosition();
+        },
+      }),
+    [classifyBySwipe, pan.x, pan.y, resetSwipePosition, studyMode]
   );
 
   const selectMode = useCallback(
@@ -362,16 +496,20 @@ export default function App() {
       if (mode === STUDY_MODES.quiz && !canPlayQuiz) return;
       setStudyMode(mode);
       setShowDetails(false);
+      flipAnim.setValue(0);
+      pan.setValue({ x: 0, y: 0 });
       resetQuizState();
     },
-    [canPlayQuiz, resetQuizState]
+    [canPlayQuiz, flipAnim, pan, resetQuizState]
   );
 
   const backToModes = useCallback(() => {
     setStudyMode(null);
     setShowDetails(false);
+    flipAnim.setValue(0);
+    pan.setValue({ x: 0, y: 0 });
     resetQuizState();
-  }, [resetQuizState]);
+  }, [flipAnim, pan, resetQuizState]);
 
   const nextQuizWord = useCallback(async () => {
     if (!totalWords) return;
@@ -380,6 +518,7 @@ export default function App() {
     setCardIndex(nextCardIndex);
     setQuizResult(null);
     setQuizSelectedOption('');
+    setQuizSummary(null);
     await persistGroupProgress(statuses, nextCardIndex);
   }, [cardIndex, persistGroupProgress, statuses, totalWords]);
 
@@ -388,25 +527,35 @@ export default function App() {
       if (!currentWord || quizResult !== null) return;
 
       const isCorrect = selectedDefinition === currentWord.definition;
+      const nextCorrect = quizScore.correct + (isCorrect ? 1 : 0);
+      const nextTotal = quizScore.total + 1;
       setQuizSelectedOption(selectedDefinition);
       setQuizResult(isCorrect ? 'correct' : 'incorrect');
-      setQuizScore((prev) => ({
-        correct: prev.correct + (isCorrect ? 1 : 0),
-        total: prev.total + 1,
-      }));
+      setQuizScore({ correct: nextCorrect, total: nextTotal });
 
-      // Auto-advance if correct after short delay
-      if (isCorrect) {
-        if (autoAdvanceRef.current !== null) {
-          clearTimeout(autoAdvanceRef.current);
-        }
-        autoAdvanceRef.current = setTimeout(() => {
-          autoAdvanceRef.current = null;
-          nextQuizWord();
-        }, 1200);
+      if (!isCorrect) {
+        Vibration.vibrate(120);
       }
+
+      if (autoAdvanceRef.current !== null) {
+        clearTimeout(autoAdvanceRef.current);
+      }
+      autoAdvanceRef.current = setTimeout(() => {
+        autoAdvanceRef.current = null;
+        if (nextTotal % QUIZ_SUMMARY_INTERVAL === 0) {
+          setQuizSummary({
+            correct: nextCorrect,
+            total: nextTotal,
+            accuracy: Math.round((nextCorrect / nextTotal) * 100),
+          });
+          setQuizResult(null);
+          setQuizSelectedOption('');
+          return;
+        }
+        nextQuizWord();
+      }, 1200);
     },
-    [currentWord, nextQuizWord, quizResult]
+    [currentWord, nextQuizWord, quizResult, quizScore.correct, quizScore.total]
   );
 
   const pronunciationButton = currentWord?.audio_url && (
@@ -414,6 +563,20 @@ export default function App() {
       <Text style={styles.audioIconText}>🔊</Text>
     </Pressable>
   );
+
+  const frontInterpolate = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+  const backInterpolate = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['180deg', '360deg'],
+  });
+  const swipeRotate = pan.x.interpolate({
+    inputRange: [-200, 0, 200],
+    outputRange: ['-8deg', '0deg', '8deg'],
+    extrapolate: 'clamp',
+  });
 
   if (!fontsLoaded) return null;
 
@@ -498,54 +661,105 @@ export default function App() {
               <>
                 {studyMode === STUDY_MODES.flashcard ? (
                   <>
-                    <Pressable
-                      style={styles.card}
-                      onPress={() => setShowDetails((prev) => !prev)}
+                    <Animated.View
+                      style={[
+                        styles.cardFlipContainer,
+                        {
+                          transform: [
+                            { translateX: pan.x },
+                            { translateY: pan.y },
+                            { rotate: swipeRotate },
+                          ],
+                        },
+                      ]}
+                      {...panResponder.panHandlers}
                     >
-                      <View style={styles.cardTopRow}>
-                        {pronunciationButton}
-                        <View
+                      <Pressable
+                        style={styles.cardTapLayer}
+                        onPress={() => setShowDetails((prev) => !prev)}
+                      >
+                        <Animated.View
                           style={[
-                            styles.cardTag,
+                            styles.card,
+                            styles.cardFace,
                             {
-                              backgroundColor:
-                                STATE_COLORS[statuses[currentWord.word]] || '#212121',
+                              transform: [{ perspective: 1000 }, { rotateY: frontInterpolate }],
                             },
                           ]}
                         >
-                          <Text style={styles.cardTagText}>
-                            {STATE_LABELS[statuses[currentWord.word]] ?? 'Unseen'}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <Text style={styles.wordText}>{currentWord.word}</Text>
-
-                      {!showDetails ? (
-                        <Text style={styles.tapHint}>Tap to reveal meaning</Text>
-                      ) : (
-                        <View style={styles.detailsWrap}>
-                          <Text style={styles.definitionText}>
-                            <Text style={styles.posText}>{currentWord.part_of_speech} </Text>
-                            {currentWord.definition}
-                          </Text>
-                          {currentWord.example && (
-                            <Text style={styles.exampleText}>"{currentWord.example}"</Text>
-                          )}
-                          {currentWord.mnemonic && (
-                            <View style={styles.mnemonicBox}>
-                              <Text style={styles.mnemonicTitle}>Mnemonic:</Text>
-                              <Text style={styles.mnemonicText}>{currentWord.mnemonic}</Text>
+                          <View style={styles.cardTopRow}>
+                            {pronunciationButton}
+                            <View
+                              style={[
+                                styles.cardTag,
+                                {
+                                  backgroundColor:
+                                    STATE_COLORS[statuses[currentWord.word]] || '#212121',
+                                },
+                              ]}
+                            >
+                              <Text style={styles.cardTagText}>
+                                {STATE_LABELS[statuses[currentWord.word]] ?? 'Unseen'}
+                              </Text>
                             </View>
-                          )}
-                          {currentWord.synonyms?.length > 0 && (
-                            <Text style={styles.synonymsText}>
-                              Synonyms: {currentWord.synonyms.join(', ')}
+                          </View>
+                          <Text style={styles.wordText}>{currentWord.word}</Text>
+                          <Text style={styles.tapHint}>Tap to reveal meaning</Text>
+                          <Text style={styles.swipeHint}>
+                            Swipe ← Learn • ↓ Review • → I Know
+                          </Text>
+                        </Animated.View>
+
+                        <Animated.View
+                          style={[
+                            styles.card,
+                            styles.cardFace,
+                            styles.cardBack,
+                            {
+                              transform: [{ perspective: 1000 }, { rotateY: backInterpolate }],
+                            },
+                          ]}
+                        >
+                          <View style={styles.cardTopRow}>
+                            {pronunciationButton}
+                            <View
+                              style={[
+                                styles.cardTag,
+                                {
+                                  backgroundColor:
+                                    STATE_COLORS[statuses[currentWord.word]] || '#212121',
+                                },
+                              ]}
+                            >
+                              <Text style={styles.cardTagText}>
+                                {STATE_LABELS[statuses[currentWord.word]] ?? 'Unseen'}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={styles.wordText}>{currentWord.word}</Text>
+                          <View style={styles.detailsWrap}>
+                            <Text style={styles.definitionText}>
+                              <Text style={styles.posText}>{currentWord.part_of_speech} </Text>
+                              {currentWord.definition}
                             </Text>
-                          )}
-                        </View>
-                      )}
-                    </Pressable>
+                            {currentWord.example && (
+                              <Text style={styles.exampleText}>"{currentWord.example}"</Text>
+                            )}
+                            {currentWord.mnemonic && (
+                              <View style={styles.mnemonicBox}>
+                                <Text style={styles.mnemonicTitle}>Mnemonic:</Text>
+                                <Text style={styles.mnemonicText}>{currentWord.mnemonic}</Text>
+                              </View>
+                            )}
+                            {currentWord.synonyms?.length > 0 && (
+                              <Text style={styles.synonymsText}>
+                                Synonyms: {currentWord.synonyms.join(', ')}
+                              </Text>
+                            )}
+                          </View>
+                        </Animated.View>
+                      </Pressable>
+                    </Animated.View>
 
                     <View style={styles.actionRow}>
                       <Pressable
@@ -630,6 +844,20 @@ export default function App() {
               <Text style={styles.dashboardStats}>
                 {globalCounts.mastered} Mastered • {allWordsCount} Total Words
               </Text>
+              <View style={styles.ringsRow}>
+                {[
+                  ['Mastered', 'mastered'],
+                  ['Reviewing', 'reviewing'],
+                  ['Learning', 'learning'],
+                ].map(([label, key]) => (
+                  <View key={key} style={styles.ringItem}>
+                    <View style={[styles.progressRing, { borderColor: STATE_COLORS[key] }]}>
+                      <Text style={styles.progressRingValue}>{globalPercentages[key]}%</Text>
+                    </View>
+                    <Text style={styles.ringLabel}>{label}</Text>
+                  </View>
+                ))}
+              </View>
               <View style={styles.compactProgressArea}>
                 <View
                   style={[
@@ -699,6 +927,51 @@ export default function App() {
           </View>
         )}
       </View>
+      <Modal visible={Boolean(quizSummary)} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Quiz Complete</Text>
+            <Text style={styles.modalBody}>
+              You answered {quizSummary?.correct}/{quizSummary?.total} correctly (
+              {quizSummary?.accuracy}% accuracy).
+            </Text>
+            <Pressable
+              style={styles.modalButton}
+              onPress={() => {
+                setQuizSummary(null);
+                nextQuizWord();
+              }}
+            >
+              <Text style={styles.modalButtonText}>Continue</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={updatePromptVisible || updatingNow} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Update Available</Text>
+            <Text style={styles.modalBody}>
+              A new app update is ready. Install now for the latest words and improvements.
+            </Text>
+            {updatingNow ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                  onPress={() => setUpdatePromptVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>Later</Text>
+                </Pressable>
+                <Pressable style={styles.modalButton} onPress={applyAvailableUpdate}>
+                  <Text style={styles.modalButtonText}>Update Now</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -714,6 +987,11 @@ const styles = StyleSheet.create({
   dashboard: { backgroundColor: '#151515', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#252525' },
   dashboardTitle: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
   dashboardStats: { color: '#bbb', fontSize: 13, fontFamily: 'Poppins_400Regular', marginBottom: 12 },
+  ringsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  ringItem: { alignItems: 'center', gap: 6 },
+  progressRing: { width: 66, height: 66, borderRadius: 33, borderWidth: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#111' },
+  progressRingValue: { color: '#fff', fontSize: 14, fontFamily: 'Poppins_700Bold' },
+  ringLabel: { color: '#aaa', fontSize: 11, fontFamily: 'Poppins_500Medium' },
   searchInput: { backgroundColor: '#111', color: '#fff', borderRadius: 12, padding: 14, fontSize: 15, fontFamily: 'Poppins_400Regular', borderWidth: 1, borderColor: '#252525', marginBottom: 16 },
   searchResultItem: { backgroundColor: '#111', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#252525' },
   searchWord: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
@@ -733,7 +1011,11 @@ const styles = StyleSheet.create({
   groupTitle: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
 
   // Flashcards UI
+  cardFlipContainer: { minHeight: 300 },
+  cardTapLayer: { minHeight: 300 },
   card: { backgroundColor: '#111', borderRadius: 20, padding: 20, minHeight: 300, borderWidth: 1, borderColor: '#252525', justifyContent: 'center' },
+  cardFace: { backfaceVisibility: 'hidden' },
+  cardBack: { position: 'absolute', width: '100%', top: 0, left: 0 },
   cardTopRow: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   audioIcon: { backgroundColor: '#222', borderRadius: 20, padding: 8 },
   audioIconText: { fontSize: 18 },
@@ -741,6 +1023,7 @@ const styles = StyleSheet.create({
   cardTagText: { color: '#fff', fontSize: 11, textTransform: 'uppercase', fontFamily: 'Poppins_700Bold' },
   wordText: { color: '#fff', fontSize: 36, textAlign: 'center', fontFamily: 'Poppins_700Bold' },
   tapHint: { textAlign: 'center', color: '#666', fontSize: 14, marginTop: 16, fontFamily: 'Poppins_400Regular' },
+  swipeHint: { textAlign: 'center', color: '#777', fontSize: 12, marginTop: 10, fontFamily: 'Poppins_500Medium' },
 
   // Card Details (Typography improvements)
   detailsWrap: { marginTop: 24, gap: 12 },
@@ -787,4 +1070,12 @@ const styles = StyleSheet.create({
   errorText: { color: '#F44336', marginBottom: 8, fontFamily: 'Poppins_400Regular' },
   retryButton: { borderWidth: 1, borderColor: '#F44336', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, alignSelf: 'flex-start' },
   retryText: { color: '#F44336', fontFamily: 'Poppins_500Medium' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  modalCard: { width: '100%', maxWidth: 360, backgroundColor: '#111', borderRadius: 16, borderWidth: 1, borderColor: '#252525', padding: 18, gap: 12 },
+  modalTitle: { color: '#fff', fontSize: 20, fontFamily: 'Poppins_700Bold' },
+  modalBody: { color: '#ddd', fontSize: 14, lineHeight: 22, fontFamily: 'Poppins_400Regular' },
+  modalActions: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end' },
+  modalButton: { backgroundColor: '#333', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16 },
+  modalButtonSecondary: { backgroundColor: '#222' },
+  modalButtonText: { color: '#fff', fontFamily: 'Poppins_600SemiBold' },
 });

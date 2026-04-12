@@ -3,6 +3,9 @@
     "name": "GRE Vocab Flash Cards",
     "slug": "gre-vocab-app",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -28,6 +31,10 @@
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "updates": {
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }
