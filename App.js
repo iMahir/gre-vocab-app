@@ -62,7 +62,7 @@ export default function App() {
     if (!wordCount) {
       return null;
     }
-    const normalizedIndex = cardIndex % wordCount;
+    const normalizedIndex = ((cardIndex % wordCount) + wordCount) % wordCount;
     return words[normalizedIndex];
   }, [cardIndex, words]);
 
