@@ -57,6 +57,7 @@ const QUIZ_SUMMARY_INTERVAL = 10;
 const SWIPE_THRESHOLD = 90;
 const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
 const INCORRECT_ANSWER_VIBRATION_MS = 120;
+const CARD_MIN_HEIGHT = 300;
 
 function shuffleArray(values) {
   const next = [...values];
@@ -266,10 +267,8 @@ export default function App() {
   }, []);
 
   const resetQuizState = useCallback(() => {
-    if (autoAdvanceRef.current !== null) {
-      clearTimeout(autoAdvanceRef.current);
-      autoAdvanceRef.current = null;
-    }
+    clearTimeout(autoAdvanceRef.current);
+    autoAdvanceRef.current = null;
     setQuizOptions([]);
     setQuizSelectedOption('');
     setQuizResult(null);
@@ -540,9 +539,7 @@ export default function App() {
         Vibration.vibrate(INCORRECT_ANSWER_VIBRATION_MS);
       }
 
-      if (autoAdvanceRef.current !== null) {
-        clearTimeout(autoAdvanceRef.current);
-      }
+      clearTimeout(autoAdvanceRef.current);
       autoAdvanceRef.current = setTimeout(() => {
         autoAdvanceRef.current = null;
         if (nextTotal % QUIZ_SUMMARY_INTERVAL === 0) {
@@ -1014,9 +1011,9 @@ const styles = StyleSheet.create({
   groupTitle: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
 
   // Flashcards UI
-  cardFlipContainer: { minHeight: 300 },
-  cardTapLayer: { minHeight: 300 },
-  card: { backgroundColor: '#111', borderRadius: 20, padding: 20, minHeight: 300, borderWidth: 1, borderColor: '#252525', justifyContent: 'center' },
+  cardFlipContainer: { minHeight: CARD_MIN_HEIGHT },
+  cardTapLayer: { minHeight: CARD_MIN_HEIGHT },
+  card: { backgroundColor: '#111', borderRadius: 20, padding: 20, minHeight: CARD_MIN_HEIGHT, borderWidth: 1, borderColor: '#252525', justifyContent: 'center' },
   cardFace: { backfaceVisibility: 'hidden' },
   cardBack: { position: 'absolute', width: '100%', top: 0, left: 0 },
   cardTopRow: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
