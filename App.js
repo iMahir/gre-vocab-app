@@ -38,13 +38,20 @@ const STORAGE_KEYS = {
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
 };
 
-function shuffleValues(values) {
+function shuffleArray(values) {
   const next = [...values];
   for (let i = next.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [next[i], next[j]] = [next[j], next[i]];
   }
   return next;
+}
+
+function normalizeCardIndex(index, total) {
+  if (!total) {
+    return 0;
+  }
+  return ((index % total) + total) % total;
 }
 
 export default function App() {
@@ -75,13 +82,24 @@ export default function App() {
     selectedGroupIndex === null ? null : groups[selectedGroupIndex] ?? null;
   const words = selectedGroup?.words ?? [];
   const totalWords = words.length;
+  const uniqueDefinitionCount = useMemo(
+    () =>
+      new Set(
+        groups
+          .flatMap((group) => group.words ?? [])
+          .map((item) => item.definition)
+          .filter(Boolean)
+      ).size,
+    [groups]
+  );
+  const canPlayQuiz = uniqueDefinitionCount >= 4;
 
   const currentWord = useMemo(() => {
     const wordCount = words.length;
     if (!wordCount) {
       return null;
     }
-    const normalizedIndex = ((cardIndex % wordCount) + wordCount) % wordCount;
+    const normalizedIndex = normalizeCardIndex(cardIndex, wordCount);
     return words[normalizedIndex];
   }, [cardIndex, words]);
 
@@ -130,6 +148,12 @@ export default function App() {
     };
   }, []);
 
+  const resetQuizState = useCallback(() => {
+    setQuizOptions([]);
+    setQuizSelectedOption('');
+    setQuizResult(null);
+  }, []);
+
   const persistGroupProgress = useCallback(
     async (nextStatuses, nextCardIndex) => {
       if (!selectedGroup) {
@@ -162,9 +186,7 @@ export default function App() {
     setSelectedGroupIndex(groupIndex);
     setStudyMode(null);
     setShowDetails(false);
-    setQuizOptions([]);
-    setQuizSelectedOption('');
-    setQuizResult(null);
+    resetQuizState();
     setQuizScore({ correct: 0, total: 0 });
 
     try {
@@ -190,17 +212,15 @@ export default function App() {
       setCardIndex(0);
       setError('Could not read saved progress for this deck.');
     }
-  }, [groups]);
+  }, [groups, resetQuizState]);
 
   const backToDecks = useCallback(() => {
     setSelectedGroupIndex(null);
     setStudyMode(null);
     setShowDetails(false);
-    setQuizOptions([]);
-    setQuizSelectedOption('');
-    setQuizResult(null);
+    resetQuizState();
     setQuizScore({ correct: 0, total: 0 });
-  }, []);
+  }, [resetQuizState]);
 
   const playPronunciation = useCallback(async () => {
     if (!currentWord?.audio_url) {
@@ -225,28 +245,44 @@ export default function App() {
 
   useEffect(() => {
     if (!currentWord || studyMode !== STUDY_MODES.quiz) {
-      setQuizOptions([]);
-      setQuizSelectedOption('');
-      setQuizResult(null);
+      resetQuizState();
       return;
     }
 
     const correctDefinition = currentWord.definition;
-    const incorrectDefinitions = shuffleValues(
+    const allDefinitions = Array.from(
+      new Set(
+        groups
+          .flatMap((group) => group.words ?? [])
+          .map((item) => item.definition)
+          .filter((definition) => definition && definition !== correctDefinition)
+      )
+    );
+
+    const deckDefinitions = Array.from(
+      new Set(
+        words
+          .filter((item) => item.word !== currentWord.word)
+          .map((item) => item.definition)
+          .filter((definition) => definition && definition !== correctDefinition)
+      )
+    );
+
+    const incorrectDefinitions = shuffleArray(
       Array.from(
-        new Set(
-          words
-            .filter((item) => item.word !== currentWord.word)
-            .map((item) => item.definition)
-            .filter((definition) => definition && definition !== correctDefinition)
-        )
+        new Set([...deckDefinitions, ...allDefinitions])
       )
     ).slice(0, 3);
 
-    setQuizOptions(shuffleValues([correctDefinition, ...incorrectDefinitions]));
+    if (incorrectDefinitions.length < 3) {
+      resetQuizState();
+      return;
+    }
+
+    setQuizOptions(shuffleArray([correctDefinition, ...incorrectDefinitions]));
     setQuizSelectedOption('');
     setQuizResult(null);
-  }, [currentWord, studyMode, words]);
+  }, [currentWord, groups, resetQuizState, studyMode, words]);
 
   const classifyWord = useCallback(
     async (state) => {
@@ -261,7 +297,7 @@ export default function App() {
       if (!totalWords) {
         return;
       }
-      const normalizedCardIndex = cardIndex >= 0 ? cardIndex % totalWords : 0;
+      const normalizedCardIndex = normalizeCardIndex(cardIndex, totalWords);
       const nextCardIndex = (normalizedCardIndex + 1) % totalWords;
 
       setStatuses(nextStatuses);
@@ -272,23 +308,27 @@ export default function App() {
     [cardIndex, currentWord, persistGroupProgress, selectedGroup, statuses, totalWords]
   );
 
-  const selectMode = useCallback((mode) => {
-    setStudyMode(mode);
-    setShowDetails(false);
-    setQuizSelectedOption('');
-    setQuizResult(null);
-  }, []);
+  const selectMode = useCallback(
+    (mode) => {
+      if (mode === STUDY_MODES.quiz && !canPlayQuiz) {
+        return;
+      }
+      setStudyMode(mode);
+      setShowDetails(false);
+      resetQuizState();
+    },
+    [canPlayQuiz, resetQuizState]
+  );
 
   const backToModes = useCallback(() => {
     setStudyMode(null);
     setShowDetails(false);
-    setQuizSelectedOption('');
-    setQuizResult(null);
-  }, []);
+    resetQuizState();
+  }, [resetQuizState]);
 
   const submitQuizAnswer = useCallback(
     (selectedDefinition) => {
-      if (!currentWord || quizSelectedOption) {
+      if (!currentWord || quizResult !== null) {
         return;
       }
 
@@ -300,18 +340,24 @@ export default function App() {
         total: prev.total + 1,
       }));
     },
-    [currentWord, quizSelectedOption]
+    [currentWord, quizResult]
   );
 
   const nextQuizWord = useCallback(async () => {
     if (!totalWords) {
       return;
     }
-    const normalizedCardIndex = cardIndex >= 0 ? cardIndex % totalWords : 0;
+    const normalizedCardIndex = normalizeCardIndex(cardIndex, totalWords);
     const nextCardIndex = (normalizedCardIndex + 1) % totalWords;
     setCardIndex(nextCardIndex);
     await persistGroupProgress(statuses, nextCardIndex);
   }, [cardIndex, persistGroupProgress, statuses, totalWords]);
+
+  const pronunciationButton = (
+    <Pressable style={styles.audioButton} onPress={playPronunciation}>
+      <Text style={styles.audioButtonText}>▶ Play Pronunciation</Text>
+    </Pressable>
+  );
 
   if (!fontsLoaded) {
     return null;
@@ -365,11 +411,26 @@ export default function App() {
                     Tap to reveal details and mark each word.
                   </Text>
                 </Pressable>
-                <Pressable style={styles.modeCard} onPress={() => selectMode(STUDY_MODES.quiz)}>
+                <Pressable
+                  style={[styles.modeCard, !canPlayQuiz && styles.modeCardDisabled]}
+                  onPress={() => selectMode(STUDY_MODES.quiz)}
+                  disabled={!canPlayQuiz}
+                  accessibilityState={{ disabled: !canPlayQuiz }}
+                  accessibilityLabel={
+                    canPlayQuiz
+                      ? 'Meaning quiz mode'
+                      : 'Meaning quiz mode disabled, requires at least 4 unique definitions'
+                  }
+                >
                   <Text style={styles.modeCardTitle}>Meaning Quiz</Text>
                   <Text style={styles.modeCardMeta}>
                     Choose the correct definition from options.
                   </Text>
+                  {!canPlayQuiz ? (
+                    <Text style={styles.modeCardWarning}>
+                      Quiz needs at least 4 unique definitions.
+                    </Text>
+                  ) : null}
                 </Pressable>
               </View>
             ) : currentWord ? (
@@ -402,9 +463,7 @@ export default function App() {
                       )}
                     </Pressable>
 
-                    <Pressable style={styles.audioButton} onPress={playPronunciation}>
-                      <Text style={styles.audioButtonText}>▶ Play Pronunciation</Text>
-                    </Pressable>
+                    {pronunciationButton}
 
                     <View style={styles.progressArea}>
                       {['mastered', 'reviewing', 'learning'].map((stateKey) => {
@@ -456,28 +515,32 @@ export default function App() {
                       <Text style={styles.wordText}>{currentWord.word}</Text>
                     </View>
 
-                    <Pressable style={styles.audioButton} onPress={playPronunciation}>
-                      <Text style={styles.audioButtonText}>▶ Play Pronunciation</Text>
-                    </Pressable>
+                    {pronunciationButton}
 
                     <View style={styles.quizOptionsWrap}>
-                      {quizOptions.map((option) => {
-                        const isSelected = quizSelectedOption === option;
-                        const isCorrectOption = option === currentWord.definition;
-                        return (
-                          <Pressable
-                            key={option}
-                            style={[
-                              styles.quizOption,
-                              isSelected && !isCorrectOption && styles.quizOptionWrong,
-                              quizSelectedOption && isCorrectOption && styles.quizOptionCorrect,
-                            ]}
-                            onPress={() => submitQuizAnswer(option)}
-                          >
-                            <Text style={styles.quizOptionText}>{option}</Text>
-                          </Pressable>
-                        );
-                      })}
+                      {quizOptions.length ? (
+                        quizOptions.map((option) => {
+                          const isSelected = quizSelectedOption === option;
+                          const isCorrectOption = option === currentWord.definition;
+                          return (
+                            <Pressable
+                              key={option}
+                              style={[
+                                styles.quizOption,
+                                isSelected && !isCorrectOption && styles.quizOptionWrong,
+                                quizSelectedOption && isCorrectOption && styles.quizOptionCorrect,
+                              ]}
+                              onPress={() => submitQuizAnswer(option)}
+                            >
+                              <Text style={styles.quizOptionText}>{option}</Text>
+                            </Pressable>
+                          );
+                        })
+                      ) : (
+                        <Text style={styles.infoText}>
+                          Quiz options are unavailable for this word.
+                        </Text>
+                      )}
                     </View>
 
                     {quizResult ? (
@@ -594,6 +657,9 @@ const styles = StyleSheet.create({
     padding: 18,
     backgroundColor: '#101010',
   },
+  modeCardDisabled: {
+    opacity: 0.55,
+  },
   modeCardTitle: {
     color: '#fff',
     fontSize: 18,
@@ -604,6 +670,12 @@ const styles = StyleSheet.create({
     color: '#bcbcbc',
     fontSize: 13,
     fontFamily: 'Poppins_400Regular',
+  },
+  modeCardWarning: {
+    marginTop: 8,
+    color: '#ffb2b2',
+    fontSize: 12,
+    fontFamily: 'Poppins_500Medium',
   },
   headerRow: {
     flexDirection: 'row',
