@@ -18,6 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROIDX_APPCOMPAT_VERSION: '1.7.0'
+      RELEASE_ANDROID_APP_NAME: 'main'
+      RELEASE_ANDROID_PACKAGE_NAME: 'com.imahir.grevocabapp'
+      RELEASE_ANDROID_APP_LABEL: 'GRE Vocab Flash Cards'
+      RELEASE_ANDROID_ICON: 'assets/icon.png'
+      RELEASE_ANDROID_ADAPTIVE_ICON: 'assets/adaptive-icon.png'
+      RELEASE_ANDROID_ADAPTIVE_BG: '#050505'
+      RELEASE_APK_FILENAME: 'app-release.apk'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,27 +81,91 @@ jobs:
           set -euo pipefail
           if [ ! -d android ]; then
             RN_VERSION=$(node -e "const pkg = require('./package.json'); const version = (pkg.dependencies && pkg.dependencies['react-native']) || (pkg.devDependencies && pkg.devDependencies['react-native']); if (!version) { console.error('react-native dependency missing in package.json'); process.exit(1); } const match = String(version).match(/\\d+\\.\\d+\\.\\d+/); if (!match) { console.error('Unable to parse react-native version: ' + version); process.exit(1); } console.log(match[0]);")
-            APP_NAME=$(node -e "try { const app = require('./app.json'); console.log(app.name || 'AndroidBuildApp'); } catch (_) { console.log('AndroidBuildApp'); }")
-            PACKAGE_SUFFIX=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
-            if [ -z "$PACKAGE_SUFFIX" ]; then
-              PACKAGE_SUFFIX=androidbuildapp
-            elif [[ "$PACKAGE_SUFFIX" =~ ^[0-9] ]]; then
-              PACKAGE_SUFFIX="app$PACKAGE_SUFFIX"
-            fi
-            PACKAGE_NAME="com.$PACKAGE_SUFFIX"
             TMP_NATIVE_DIR=$(mktemp -d)
             trap 'rm -rf "$TMP_NATIVE_DIR"' EXIT
-            if ! npx @react-native-community/cli init "$APP_NAME" \
+            if ! npx @react-native-community/cli init "$RELEASE_ANDROID_APP_NAME" \
               --version "$RN_VERSION" \
               --directory "$TMP_NATIVE_DIR" \
-              --package-name "$PACKAGE_NAME" \
+              --package-name "$RELEASE_ANDROID_PACKAGE_NAME" \
               --skip-install \
               --skip-git-init; then
-              echo "Failed to generate Android native project for release build (rn=$RN_VERSION package=$PACKAGE_NAME)."
+              echo "Failed to generate Android native project for release build (rn=$RN_VERSION package=$RELEASE_ANDROID_PACKAGE_NAME)."
               exit 1
             fi
             cp -R "$TMP_NATIVE_DIR/android" ./android
           fi
+
+      - name: Apply stable Android release branding
+        run: |
+          set -euo pipefail
+          STRINGS_FILE="android/app/src/main/res/values/strings.xml"
+          APP_BUILD_FILE="android/app/build.gradle"
+          ADAPTIVE_DIR="android/app/src/main/res/mipmap-anydpi-v26"
+
+          python - "$STRINGS_FILE" "$APP_BUILD_FILE" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          strings_file = pathlib.Path(sys.argv[1])
+          build_file = pathlib.Path(sys.argv[2])
+          label = "GRE Vocab Flash Cards"
+          package_name = "com.imahir.grevocabapp"
+
+          if not strings_file.exists():
+            raise SystemExit(f"Missing file: {strings_file}")
+          strings = strings_file.read_text()
+          if 'name="app_name"' not in strings:
+            raise SystemExit('app_name string missing in strings.xml')
+          strings = re.sub(
+            r'(<string\\s+name="app_name">)(.*?)(</string>)',
+            rf'\\1{label}\\3',
+            strings,
+            flags=re.DOTALL,
+          )
+          strings_file.write_text(strings)
+
+          if not build_file.exists():
+            raise SystemExit(f"Missing file: {build_file}")
+          build_gradle = build_file.read_text()
+          if 'applicationId' not in build_gradle:
+            raise SystemExit('applicationId not found in android/app/build.gradle')
+          build_gradle = re.sub(
+            r'applicationId\\s+"[^"]+"',
+            f'applicationId "{package_name}"',
+            build_gradle,
+          )
+          build_file.write_text(build_gradle)
+          PY
+
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp "$RELEASE_ANDROID_ICON" "android/app/src/main/res/mipmap-$density/ic_launcher.png"
+            cp "$RELEASE_ANDROID_ICON" "android/app/src/main/res/mipmap-$density/ic_launcher_round.png"
+          done
+
+          rm -f android/app/src/main/res/drawable/ic_launcher_foreground.xml
+          cp "$RELEASE_ANDROID_ADAPTIVE_ICON" android/app/src/main/res/drawable/ic_launcher_foreground.png
+          cat > android/app/src/main/res/drawable/ic_launcher_background.xml <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+            <solid android:color="${RELEASE_ANDROID_ADAPTIVE_BG}" />
+          </shape>
+          EOF
+          mkdir -p "$ADAPTIVE_DIR"
+          cat > "$ADAPTIVE_DIR/ic_launcher.xml" <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@drawable/ic_launcher_background" />
+            <foreground android:drawable="@drawable/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+          cat > "$ADAPTIVE_DIR/ic_launcher_round.xml" <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@drawable/ic_launcher_background" />
+            <foreground android:drawable="@drawable/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
 
       - name: Increase Gradle JVM memory
         run: |
@@ -110,6 +181,24 @@ jobs:
           cd android
           chmod +x ./gradlew
           ./gradlew assembleRelease
+
+      - name: Verify Android release identity and package artifact
+        run: |
+          set -euo pipefail
+          grep -Eq 'applicationId\\s+"com\\.imahir\\.grevocabapp"' android/app/build.gradle
+          grep -Fq '<string name="app_name">GRE Vocab Flash Cards</string>' android/app/src/main/res/values/strings.xml
+          test -f android/app/src/main/res/drawable/ic_launcher_foreground.png
+          test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+
+          mkdir -p release-artifacts
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk "release-artifacts/$RELEASE_APK_FILENAME"
+          elif [ -f android/app/build/outputs/apk/release/app-release-unsigned.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release-unsigned.apk "release-artifacts/$RELEASE_APK_FILENAME"
+          else
+            echo "No release APK found in android/app/build/outputs/apk/release"
+            exit 1
+          fi
 
       - name: Prepare release tag
         id: tag
@@ -127,9 +216,7 @@ jobs:
         with:
           tag: ${{ steps.tag.outputs.value }}
           name: GRE Vocab Android ${{ steps.tag.outputs.value }}
-          artifacts: |
-            android/app/build/outputs/apk/release/*-release.apk
-            android/app/build/outputs/apk/release/*-release-unsigned.apk
+          artifacts: release-artifacts/app-release.apk
           artifactContentType: application/vnd.android.package-archive
           generateReleaseNotes: true
           allowUpdates: true

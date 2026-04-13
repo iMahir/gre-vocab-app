@@ -48,3 +48,12 @@ npm run ios
 3. Enter your model name (for example `gemini-2.0-flash` or `gpt-4o-mini`).
 4. Paste your API key and tap **Save Settings**.
 5. Open a deck → **Voice Meaning Check** mode → speak and evaluate.
+
+## Android release identity policy
+
+To keep installs/upgrades consistent with prior releases, the Android release workflow enforces:
+
+- Package name: `com.imahir.grevocabapp`
+- App label: `GRE Vocab Flash Cards`
+- Launcher icon sources: `assets/icon.png` and `assets/adaptive-icon.png`
+- Release asset filename: `app-release.apk`
