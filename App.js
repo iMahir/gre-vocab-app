@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   StatusBar as RNStatusBar,
   Text,
@@ -65,6 +66,7 @@ const SWIPE_THRESHOLD = 90;
 const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
 const INCORRECT_ANSWER_VIBRATION_MS = 120;
 const CARD_MIN_HEIGHT = 300;
+const CARD_BACK_TOP_PADDING = 72;
 // Extra top spacing to keep content clear of Android status icons.
 const ANDROID_STATUS_BAR_MARGIN = 10;
 const DASHBOARD_MIN_SEGMENT_FLEX = 1;
@@ -842,7 +844,11 @@ export default function App() {
                             </View>
                           </View>
                           <Text style={styles.wordText}>{currentWord.word}</Text>
-                          <View style={styles.detailsWrap}>
+                          <ScrollView
+                            style={styles.detailsScroll}
+                            contentContainerStyle={styles.detailsWrap}
+                            showsVerticalScrollIndicator={false}
+                          >
                             <Text style={styles.definitionText}>
                               <Text style={styles.posText}>{currentWord.part_of_speech} </Text>
                               {currentWord.definition}
@@ -861,7 +867,7 @@ export default function App() {
                                 Synonyms: {currentWord.synonyms.join(', ')}
                               </Text>
                             )}
-                          </View>
+                          </ScrollView>
                         </Animated.View>
                       </Pressable>
                     </Animated.View>
@@ -1164,11 +1170,11 @@ const styles = StyleSheet.create({
   groupTitle: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
 
   // Flashcards UI
-  cardFlipContainer: { minHeight: CARD_MIN_HEIGHT },
-  cardTapLayer: { minHeight: CARD_MIN_HEIGHT },
-  card: { backgroundColor: '#111', borderRadius: 20, padding: 20, minHeight: CARD_MIN_HEIGHT, borderWidth: 1, borderColor: '#252525', justifyContent: 'center' },
+  cardFlipContainer: { flex: 1, minHeight: CARD_MIN_HEIGHT },
+  cardTapLayer: { flex: 1, minHeight: CARD_MIN_HEIGHT },
+  card: { backgroundColor: '#111', borderRadius: 20, padding: 20, minHeight: CARD_MIN_HEIGHT, borderWidth: 1, borderColor: '#252525', justifyContent: 'center', overflow: 'hidden' },
   cardFace: { backfaceVisibility: 'hidden' },
-  cardBack: { position: 'absolute', width: '100%', top: 0, left: 0 },
+  cardBack: { position: 'absolute', width: '100%', top: 0, left: 0, justifyContent: 'flex-start', paddingTop: CARD_BACK_TOP_PADDING, paddingBottom: 12 },
   cardTopRow: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   audioIcon: { backgroundColor: '#222', borderRadius: 20, padding: 8 },
   audioIconText: { fontSize: 18 },
@@ -1179,7 +1185,8 @@ const styles = StyleSheet.create({
   swipeHint: { textAlign: 'center', color: '#777', fontSize: 12, marginTop: 10, fontFamily: 'Poppins_500Medium' },
 
   // Card Details (Typography improvements)
-  detailsWrap: { marginTop: 24, gap: 12 },
+  detailsScroll: { marginTop: 14, flex: 1 },
+  detailsWrap: { gap: 12, paddingBottom: 8 },
   definitionText: { color: '#fff', fontSize: 18, lineHeight: 26, fontFamily: 'Poppins_600SemiBold', textAlign: 'center' },
   posText: { color: '#888', fontStyle: 'italic', fontFamily: 'Poppins_400Regular' },
   exampleText: { color: '#ddd', fontSize: 15, fontStyle: 'italic', textAlign: 'center', fontFamily: 'Poppins_400Regular' },
