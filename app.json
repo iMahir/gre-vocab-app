@@ -1,40 +1,4 @@
 {
-  "expo": {
-    "name": "GRE Vocab Flash Cards",
-    "slug": "gre-vocab-app",
-    "version": "1.0.0",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#050505"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#050505"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.imahir.grevocabapp"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-font"
-    ],
-    "updates": {
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 5000
-    }
-  }
+  "name": "main",
+  "displayName": "GRE Vocab Flash Cards"
 }

@@ -1,6 +1,6 @@
-# GRE Vocabulary Flash Cards (Android)
+# GRE Vocabulary App (Android)
 
-A modern black-and-white GRE vocabulary flashcard app inspired by Magoosh, built with React Native (Expo).
+A modern black-and-white GRE vocabulary app built with React Native.
 
 ## Data source
 
@@ -14,11 +14,13 @@ The app fetches words with the Fetch API from:
 - Separate study modes per deck:
   - **Flash Cards**: tap card to reveal definition, example, mnemonic, and synonyms
   - **Meaning Quiz**: choose the correct definition from multiple options
+  - **Voice Meaning Check**: speak the meaning, transcribe with Android speech recognition, and get AI feedback
 - Mark words as **Mastered**, **Reviewing**, or **Learning**
 - Progress bars per deck for all three learning states
-- Pronunciation audio playback
 - Local progress persistence with AsyncStorage
-- Black-and-white UI with Poppins typography
+- AI settings page to configure provider (`Gemini` or `ChatGPT`), model name, and API key
+- API key stored securely via native keychain/keystore
+- Black-and-white UI with improved mode and settings flows
 
 ## Run locally
 
@@ -27,27 +29,22 @@ npm install
 npm run start
 ```
 
-To open Android emulator/device:
+To run on Android:
 
 ```bash
 npm run android
 ```
 
-## Android release automation
+To run on iOS:
 
-The workflow at `.github/workflows/android-release.yml` builds an Android APK and publishes it to GitHub Releases:
+```bash
+npm run ios
+```
 
-- Automatically on tags like `v1.0.0`
-- Manually via **Actions → Android Release → Run workflow**
+## Voice mode setup
 
-## Auto updates on new releases (Expo OTA)
-
-The same release workflow can also publish an OTA update so installed apps update automatically on app load:
-
-1. Create/link an EAS project for this app and copy its `projectId`.
-2. Add repository secrets:
-   - `EXPO_TOKEN`: Expo access token with permission to publish updates
-   - `EXPO_PROJECT_ID`: EAS project ID (UUID)
-3. Keep using the Android release workflow. On each release run, it will publish to the `production` update channel before creating the GitHub Release.
-
-If the secrets are not configured, APK release creation still runs and OTA publish is skipped with a workflow warning.
+1. Open **Settings** in the app.
+2. Choose **Gemini** or **ChatGPT**.
+3. Enter your model name (for example `gemini-2.0-flash` or `gpt-4o-mini`).
+4. Paste your API key and tap **Save Settings**.
+5. Open a deck → **Voice Meaning Check** mode → speak and evaluate.
