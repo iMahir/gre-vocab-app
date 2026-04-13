@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   FlatList,
   Modal,
   PanResponder,
+  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
+  StatusBar as RNStatusBar,
   Text,
   TextInput,
   Vibration,
@@ -50,6 +53,10 @@ const STORAGE_KEYS = {
   statuses: (groupName) => `gre/statuses/${groupName}`,
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
 };
+const STORAGE_PREFIXES = {
+  statuses: STORAGE_KEYS.statuses(''),
+  cardIndex: STORAGE_KEYS.cardIndex(''),
+};
 
 // Minimum flex value so a zero-count segment stays visible as a sliver
 const MIN_PROGRESS_FLEX = 0.01;
@@ -58,6 +65,9 @@ const SWIPE_THRESHOLD = 90;
 const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
 const INCORRECT_ANSWER_VIBRATION_MS = 120;
 const CARD_MIN_HEIGHT = 300;
+// Extra top spacing to keep content clear of Android status icons.
+const ANDROID_STATUS_BAR_MARGIN = 10;
+const DASHBOARD_MIN_SEGMENT_FLEX = 1;
 
 function shuffleArray(values) {
   const next = [...values];
@@ -112,6 +122,10 @@ export default function App() {
     selectedGroupIndex === null ? null : groups[selectedGroupIndex] ?? null;
   const words = selectedGroup?.words ?? [];
   const totalWords = words.length;
+  const topPadding =
+    Platform.OS === 'android'
+      ? (RNStatusBar.currentHeight ?? 0) + ANDROID_STATUS_BAR_MARGIN
+      : 12;
 
   const uniqueDefinitionCount = useMemo(
     () =>
@@ -191,6 +205,29 @@ export default function App() {
       .filter((w) => w.word.toLowerCase().includes(lowerQuery));
   }, [searchQuery, groups]);
 
+  const refreshGlobalStatuses = useCallback(async (groupsToScan) => {
+    const scanGroups = Array.isArray(groupsToScan) ? groupsToScan : [];
+    let allStatuses = {};
+    for (const group of scanGroups) {
+      const saved = await AsyncStorage.getItem(STORAGE_KEYS.statuses(group.group));
+      if (!saved) continue;
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          allStatuses = { ...allStatuses, ...parsed };
+        }
+      } catch (err) {
+        // Ignore corrupted saved statuses for one group.
+        console.warn(
+          'Ignoring corrupted saved group status data for group. Progress for this group may reset:',
+          group.group,
+          err
+        );
+      }
+    }
+    setGlobalStatuses(allStatuses);
+  }, []);
+
   const loadWords = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -204,22 +241,13 @@ export default function App() {
         throw new Error('Invalid words payload.');
       }
       setGroups(payload);
-
-      // Load all global statuses to calculate overall progress
-      let allStatuses = {};
-      for (const group of payload) {
-        const saved = await AsyncStorage.getItem(STORAGE_KEYS.statuses(group.group));
-        if (saved) {
-          allStatuses = { ...allStatuses, ...JSON.parse(saved) };
-        }
-      }
-      setGlobalStatuses(allStatuses);
+      await refreshGlobalStatuses(payload);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load words.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshGlobalStatuses]);
 
   useEffect(() => {
     loadWords();
@@ -345,6 +373,85 @@ export default function App() {
     setQuizScore({ correct: 0, total: 0 });
     setSearchQuery('');
   }, [flipAnim, pan, resetQuizState]);
+
+  const resetSelectedDeckState = useCallback(() => {
+    setStatuses({});
+    setCardIndex(0);
+    setStudyMode(null);
+    setShowDetails(false);
+    flipAnim.setValue(0);
+    pan.setValue({ x: 0, y: 0 });
+    resetQuizState();
+    setQuizScore({ correct: 0, total: 0 });
+  }, [flipAnim, pan, resetQuizState]);
+
+  const confirmResetGroupProgress = useCallback(
+    (group) => {
+      if (!group?.group) return;
+
+      Alert.alert(
+        'Reset Group Progress',
+        `This will clear your saved progress for ${group.group}.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Reset',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await AsyncStorage.multiRemove([
+                  STORAGE_KEYS.statuses(group.group),
+                  STORAGE_KEYS.cardIndex(group.group),
+                ]);
+                if (selectedGroup?.group === group.group) {
+                  resetSelectedDeckState();
+                }
+                await refreshGlobalStatuses(groups);
+                setError('');
+              } catch (err) {
+                console.warn('Failed resetting group progress.', err);
+                setError('Could not reset progress for this group.');
+              }
+            },
+          },
+        ]
+      );
+    },
+    [groups, refreshGlobalStatuses, resetSelectedDeckState, selectedGroup]
+  );
+
+  const confirmResetAllProgress = useCallback(() => {
+    Alert.alert(
+      'Reset All Progress',
+      'This will clear all saved progress for every group.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const allStorageKeys = await AsyncStorage.getAllKeys();
+              const progressKeys = allStorageKeys.filter(
+                (key) =>
+                  key.startsWith(STORAGE_PREFIXES.statuses) ||
+                  key.startsWith(STORAGE_PREFIXES.cardIndex)
+              );
+              if (progressKeys.length) {
+                await AsyncStorage.multiRemove(progressKeys);
+              }
+              resetSelectedDeckState();
+              await refreshGlobalStatuses(groups);
+              setError('');
+            } catch (err) {
+              console.warn('Failed resetting all progress.', err);
+              setError('Could not reset all progress.');
+            }
+          },
+        },
+      ]
+    );
+  }, [groups, refreshGlobalStatuses, resetSelectedDeckState]);
 
   const playPronunciation = useCallback(async () => {
     if (!currentWord?.audio_url) return;
@@ -581,7 +688,7 @@ export default function App() {
   if (loading) {
     return (
       <SafeAreaView style={styles.base}>
-        <StatusBar style="light" />
+        <ExpoStatusBar style="light" />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#fff" />
           <Text style={styles.infoText}>Loading GRE words...</Text>
@@ -592,8 +699,8 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.base}>
-      <StatusBar style="light" />
-      <View style={styles.container}>
+      <ExpoStatusBar style="light" />
+      <View style={[styles.container, { paddingTop: topPadding }]}>
         <Text style={styles.appTitle}>GRE Vocab</Text>
 
         {error ? (
@@ -860,19 +967,28 @@ export default function App() {
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.mastered, flex: globalCounts.mastered || MIN_PROGRESS_FLEX },
+                    {
+                      backgroundColor: STATE_COLORS.mastered,
+                      flex: globalCounts.mastered || DASHBOARD_MIN_SEGMENT_FLEX,
+                    },
                   ]}
                 />
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.reviewing, flex: globalCounts.reviewing || MIN_PROGRESS_FLEX },
+                    {
+                      backgroundColor: STATE_COLORS.reviewing,
+                      flex: globalCounts.reviewing || DASHBOARD_MIN_SEGMENT_FLEX,
+                    },
                   ]}
                 />
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.learning, flex: globalCounts.learning || MIN_PROGRESS_FLEX },
+                    {
+                      backgroundColor: STATE_COLORS.learning,
+                      flex: globalCounts.learning || DASHBOARD_MIN_SEGMENT_FLEX,
+                    },
                   ]}
                 />
                 <View
@@ -885,16 +1001,42 @@ export default function App() {
                   ]}
                 />
               </View>
+              <View style={styles.dashboardSegmentLegend}>
+                {[
+                  ['Mastered', 'mastered'],
+                  ['Reviewing', 'reviewing'],
+                  ['Learning', 'learning'],
+                ].map(([label, key]) => (
+                  <View key={key} style={styles.dashboardSegmentItem}>
+                    <View style={[styles.dashboardSegmentDot, { backgroundColor: STATE_COLORS[key] }]} />
+                    <Text
+                      style={styles.dashboardSegmentText}
+                      accessibilityLabel={`${label}: ${globalCounts[key]} of ${allWordsCount} words`}
+                    >
+                      {label}: {globalCounts[key]}/{allWordsCount}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Pressable style={styles.resetAllButton} onPress={confirmResetAllProgress}>
+                <Text style={styles.resetAllButtonText}>Reset all progress</Text>
+              </Pressable>
             </View>
 
             {/* Search Bar */}
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search words..."
-              placeholderTextColor="#888"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
+            <View style={styles.searchWrap}>
+              <Text style={styles.searchIcon} accessible={false}>
+                🔎
+              </Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search words..."
+                placeholderTextColor="#888"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                accessibilityLabel="Search words"
+              />
+            </View>
 
             {searchQuery ? (
               <FlatList
@@ -915,10 +1057,18 @@ export default function App() {
                 keyExtractor={(item, index) => `${item.group}-${index}`}
                 contentContainerStyle={styles.deckListContent}
                 renderItem={({ item, index }) => (
-                  <Pressable style={styles.deckButton} onPress={() => openGroup(index)}>
-                    <Text style={styles.deckTitle}>{item.group}</Text>
-                    <Text style={styles.deckMeta}>{item.words?.length ?? 0} words</Text>
-                  </Pressable>
+                  <View style={styles.deckButton}>
+                    <Pressable style={styles.deckMainArea} onPress={() => openGroup(index)}>
+                      <Text style={styles.deckTitle}>{item.group}</Text>
+                      <Text style={styles.deckMeta}>{item.words?.length ?? 0} words</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.resetGroupButton}
+                      onPress={() => confirmResetGroupProgress(item)}
+                    >
+                      <Text style={styles.resetGroupButtonText}>Reset</Text>
+                    </Pressable>
+                  </View>
                 )}
               />
             )}
@@ -976,7 +1126,7 @@ export default function App() {
 
 const styles = StyleSheet.create({
   base: { flex: 1, backgroundColor: '#050505' },
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  container: { flex: 1, paddingHorizontal: 16, paddingBottom: 8 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   appTitle: { color: '#fff', fontSize: 28, marginBottom: 16, fontFamily: 'Poppins_700Bold' },
   sectionTitle: { color: '#fff', fontSize: 18, marginBottom: 12, fontFamily: 'Poppins_600SemiBold' },
@@ -990,7 +1140,9 @@ const styles = StyleSheet.create({
   progressRing: { width: 66, height: 66, borderRadius: 33, borderWidth: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#111' },
   progressRingValue: { color: '#fff', fontSize: 14, fontFamily: 'Poppins_700Bold' },
   ringLabel: { color: '#aaa', fontSize: 11, fontFamily: 'Poppins_500Medium' },
-  searchInput: { backgroundColor: '#111', color: '#fff', borderRadius: 12, padding: 14, fontSize: 15, fontFamily: 'Poppins_400Regular', borderWidth: 1, borderColor: '#252525', marginBottom: 16 },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#2f3240', backgroundColor: '#131722', marginBottom: 16, paddingHorizontal: 12 },
+  searchIcon: { color: '#7f8aa3', fontSize: 15, marginRight: 8 },
+  searchInput: { flex: 1, color: '#fff', paddingVertical: 14, fontSize: 15, fontFamily: 'Poppins_400Regular' },
   searchResultItem: { backgroundColor: '#111', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#252525' },
   searchWord: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
   searchDef: { color: '#aaa', fontSize: 13, fontFamily: 'Poppins_400Regular', marginTop: 4 },
@@ -998,9 +1150,12 @@ const styles = StyleSheet.create({
   // Decks
   deckListWrap: { flex: 1 },
   deckListContent: { paddingBottom: 20 },
-  deckButton: { borderWidth: 1, borderColor: '#252525', borderRadius: 16, padding: 18, marginBottom: 12, backgroundColor: '#111' },
+  deckButton: { borderWidth: 1, borderColor: '#252525', borderRadius: 16, marginBottom: 12, backgroundColor: '#111', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  deckMainArea: { flex: 1, padding: 18 },
   deckTitle: { color: '#fff', fontSize: 17, fontFamily: 'Poppins_600SemiBold' },
   deckMeta: { color: '#888', marginTop: 4, fontFamily: 'Poppins_400Regular' },
+  resetGroupButton: { marginRight: 14, borderWidth: 1, borderColor: '#444', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#171717' },
+  resetGroupButtonText: { color: '#ddd', fontSize: 12, fontFamily: 'Poppins_500Medium' },
 
   // Header
   deckScreen: { flex: 1 },
@@ -1036,6 +1191,12 @@ const styles = StyleSheet.create({
   // Progress UI
   compactProgressArea: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 16, backgroundColor: '#333' },
   compactProgressSegment: { height: '100%' },
+  dashboardSegmentLegend: { marginTop: -4, marginBottom: 12, gap: 6 },
+  dashboardSegmentItem: { flexDirection: 'row', alignItems: 'center' },
+  dashboardSegmentDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  dashboardSegmentText: { color: '#9ea5b5', fontSize: 12, fontFamily: 'Poppins_500Medium' },
+  resetAllButton: { alignSelf: 'flex-end', borderWidth: 1, borderColor: '#444', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#111' },
+  resetAllButtonText: { color: '#ddd', fontSize: 12, fontFamily: 'Poppins_500Medium' },
 
   // Action Buttons
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 24 },
