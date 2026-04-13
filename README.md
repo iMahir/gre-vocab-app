@@ -39,3 +39,15 @@ The workflow at `.github/workflows/android-release.yml` builds an Android APK an
 
 - Automatically on tags like `v1.0.0`
 - Manually via **Actions → Android Release → Run workflow**
+
+## Auto updates on new releases (Expo OTA)
+
+The same release workflow can also publish an OTA update so installed apps update automatically on app load:
+
+1. Create/link an EAS project for this app and copy its `projectId`.
+2. Add repository secrets:
+   - `EXPO_TOKEN`: Expo access token with permission to publish updates
+   - `EXPO_PROJECT_ID`: EAS project ID (UUID)
+3. Keep using the Android release workflow. On each release run, it will publish to the `production` update channel before creating the GitHub Release.
+
+If the secrets are not configured, APK release creation still runs and OTA publish is skipped with a workflow warning.
