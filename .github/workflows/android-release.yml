@@ -34,6 +34,7 @@ jobs:
           VOICE_GRADLE="node_modules/@react-native-voice/voice/android/build.gradle"
           ANDROIDX_APPCOMPAT_VERSION="1.7.0"
           if [ -f "$VOICE_GRADLE" ]; then
+            # Replace legacy appcompat declaration (supports both variable and hardcoded versions).
             sed -E -i "s|implementation \"com\\.android\\.support:appcompat-v7:[^\"]+\"|implementation \"androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}\"|g" "$VOICE_GRADLE"
             if grep -q 'com.android.support:appcompat-v7' "$VOICE_GRADLE"; then
               echo "Failed to patch legacy appcompat dependency in $VOICE_GRADLE"
