@@ -66,6 +66,7 @@ const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
 const INCORRECT_ANSWER_VIBRATION_MS = 120;
 const CARD_MIN_HEIGHT = 300;
 const ANDROID_STATUS_BAR_MARGIN = 10;
+const DASHBOARD_MIN_SEGMENT_FLEX = 1;
 
 function shuffleArray(values) {
   const next = [...values];
@@ -961,19 +962,28 @@ export default function App() {
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.mastered, flex: globalCounts.mastered || MIN_PROGRESS_FLEX },
+                    {
+                      backgroundColor: STATE_COLORS.mastered,
+                      flex: globalCounts.mastered || DASHBOARD_MIN_SEGMENT_FLEX,
+                    },
                   ]}
                 />
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.reviewing, flex: globalCounts.reviewing || MIN_PROGRESS_FLEX },
+                    {
+                      backgroundColor: STATE_COLORS.reviewing,
+                      flex: globalCounts.reviewing || DASHBOARD_MIN_SEGMENT_FLEX,
+                    },
                   ]}
                 />
                 <View
                   style={[
                     styles.compactProgressSegment,
-                    { backgroundColor: STATE_COLORS.learning, flex: globalCounts.learning || MIN_PROGRESS_FLEX },
+                    {
+                      backgroundColor: STATE_COLORS.learning,
+                      flex: globalCounts.learning || DASHBOARD_MIN_SEGMENT_FLEX,
+                    },
                   ]}
                 />
                 <View
@@ -986,19 +996,36 @@ export default function App() {
                   ]}
                 />
               </View>
+              <View style={styles.dashboardSegmentLegend}>
+                {[
+                  ['Mastered', 'mastered'],
+                  ['Reviewing', 'reviewing'],
+                  ['Learning', 'learning'],
+                ].map(([label, key]) => (
+                  <View key={key} style={styles.dashboardSegmentItem}>
+                    <View style={[styles.dashboardSegmentDot, { backgroundColor: STATE_COLORS[key] }]} />
+                    <Text style={styles.dashboardSegmentText}>
+                      {label}: {globalCounts[key]}/{allWordsCount}
+                    </Text>
+                  </View>
+                ))}
+              </View>
               <Pressable style={styles.resetAllButton} onPress={confirmResetAllProgress}>
                 <Text style={styles.resetAllButtonText}>Reset all progress</Text>
               </Pressable>
             </View>
 
             {/* Search Bar */}
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search words..."
-              placeholderTextColor="#888"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
+            <View style={styles.searchWrap}>
+              <Text style={styles.searchIcon}>🔎</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search words..."
+                placeholderTextColor="#888"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
 
             {searchQuery ? (
               <FlatList
@@ -1102,7 +1129,9 @@ const styles = StyleSheet.create({
   progressRing: { width: 66, height: 66, borderRadius: 33, borderWidth: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#111' },
   progressRingValue: { color: '#fff', fontSize: 14, fontFamily: 'Poppins_700Bold' },
   ringLabel: { color: '#aaa', fontSize: 11, fontFamily: 'Poppins_500Medium' },
-  searchInput: { backgroundColor: '#111', color: '#fff', borderRadius: 12, padding: 14, fontSize: 15, fontFamily: 'Poppins_400Regular', borderWidth: 1, borderColor: '#252525', marginBottom: 16 },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#2f3240', backgroundColor: '#131722', marginBottom: 16, paddingHorizontal: 12 },
+  searchIcon: { color: '#7f8aa3', fontSize: 15, marginRight: 8 },
+  searchInput: { flex: 1, color: '#fff', paddingVertical: 14, fontSize: 15, fontFamily: 'Poppins_400Regular' },
   searchResultItem: { backgroundColor: '#111', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#252525' },
   searchWord: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
   searchDef: { color: '#aaa', fontSize: 13, fontFamily: 'Poppins_400Regular', marginTop: 4 },
@@ -1151,6 +1180,10 @@ const styles = StyleSheet.create({
   // Progress UI
   compactProgressArea: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 16, backgroundColor: '#333' },
   compactProgressSegment: { height: '100%' },
+  dashboardSegmentLegend: { marginTop: -4, marginBottom: 12, gap: 6 },
+  dashboardSegmentItem: { flexDirection: 'row', alignItems: 'center' },
+  dashboardSegmentDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  dashboardSegmentText: { color: '#9ea5b5', fontSize: 12, fontFamily: 'Poppins_500Medium' },
   resetAllButton: { alignSelf: 'flex-end', borderWidth: 1, borderColor: '#444', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#111' },
   resetAllButtonText: { color: '#ddd', fontSize: 12, fontFamily: 'Poppins_500Medium' },
 
