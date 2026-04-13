@@ -54,8 +54,8 @@ const STORAGE_KEYS = {
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
 };
 const STORAGE_PREFIXES = {
-  statuses: 'gre/statuses/',
-  cardIndex: 'gre/card-index/',
+  statuses: STORAGE_KEYS.statuses(''),
+  cardIndex: STORAGE_KEYS.cardIndex(''),
 };
 
 // Minimum flex value so a zero-count segment stays visible as a sliver
@@ -65,7 +65,8 @@ const SWIPE_THRESHOLD = 90;
 const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
 const INCORRECT_ANSWER_VIBRATION_MS = 120;
 const CARD_MIN_HEIGHT = 300;
-const ANDROID_STATUS_BAR_MARGIN_PX = 10;
+// Extra top spacing to keep content clear of Android status icons.
+const ANDROID_STATUS_BAR_MARGIN = 10;
 const DASHBOARD_MIN_SEGMENT_FLEX = 1;
 
 function shuffleArray(values) {
@@ -123,7 +124,7 @@ export default function App() {
   const totalWords = words.length;
   const topPadding =
     Platform.OS === 'android'
-      ? (RNStatusBar.currentHeight ?? 0) + ANDROID_STATUS_BAR_MARGIN_PX
+      ? (RNStatusBar.currentHeight ?? 0) + ANDROID_STATUS_BAR_MARGIN
       : 12;
 
   const uniqueDefinitionCount = useMemo(
@@ -217,7 +218,11 @@ export default function App() {
         }
       } catch (err) {
         // Ignore corrupted saved statuses for one group.
-        console.warn('Ignoring corrupted saved group status data for group:', group.group, err);
+        console.warn(
+          'Ignoring corrupted saved group status data for group. Progress for this group may reset:',
+          group.group,
+          err
+        );
       }
     }
     setGlobalStatuses(allStatuses);
@@ -1029,6 +1034,7 @@ export default function App() {
                 placeholderTextColor="#888"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
+                accessibilityLabel="Search words"
               />
             </View>
 
