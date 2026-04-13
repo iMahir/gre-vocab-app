@@ -16,9 +16,6 @@ jobs:
   build-and-release:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      EXPO_PROJECT_ID: ${{ secrets.EXPO_PROJECT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,10 +29,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate native Android project
-        run: npx expo prebuild --platform android --non-interactive
-
-      # Must be AFTER "expo prebuild" so Gradle files exist (gradlew, gradle-wrapper.properties, *.gradle, etc.)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -68,14 +61,6 @@ jobs:
           else
             echo "value=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Publish OTA update
-        if: ${{ env.EXPO_TOKEN != '' && env.EXPO_PROJECT_ID != '' }}
-        run: npx eas-cli@18.6.0 update --channel production --platform android --message "Android release ${{ steps.tag.outputs.value }}" --non-interactive
-
-      - name: Warn when OTA publish is skipped
-        if: ${{ env.EXPO_TOKEN == '' || env.EXPO_PROJECT_ID == '' }}
-        run: echo "::warning::Skipping OTA publish. Configure EXPO_TOKEN and EXPO_PROJECT_ID repository secrets to enable auto updates."
 
       - name: Create GitHub release and upload APK
         uses: ncipollo/release-action@v1
