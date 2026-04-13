@@ -45,16 +45,21 @@ jobs:
             PACKAGE_SUFFIX=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
             if [ -z "$PACKAGE_SUFFIX" ]; then
               PACKAGE_SUFFIX=androidbuildapp
+            elif [[ "$PACKAGE_SUFFIX" =~ ^[0-9] ]]; then
+              PACKAGE_SUFFIX="app$PACKAGE_SUFFIX"
             fi
             PACKAGE_NAME="com.$PACKAGE_SUFFIX"
             TMP_NATIVE_DIR=$(mktemp -d)
             trap 'rm -rf "$TMP_NATIVE_DIR"' EXIT
-            npx @react-native-community/cli init "$APP_NAME" \
+            if ! npx @react-native-community/cli init "$APP_NAME" \
               --version "$RN_VERSION" \
               --directory "$TMP_NATIVE_DIR" \
               --package-name "$PACKAGE_NAME" \
               --skip-install \
-              --skip-git-init
+              --skip-git-init; then
+              echo "Failed to generate Android native project for release build."
+              exit 1
+            fi
             cp -R "$TMP_NATIVE_DIR/android" ./android
           fi
 
