@@ -102,15 +102,15 @@ jobs:
           APP_BUILD_FILE="android/app/build.gradle"
           ADAPTIVE_DIR="android/app/src/main/res/mipmap-anydpi-v26"
 
-          python - "$STRINGS_FILE" "$APP_BUILD_FILE" <<'PY'
+          python - "$STRINGS_FILE" "$APP_BUILD_FILE" "$RELEASE_ANDROID_APP_LABEL" "$RELEASE_ANDROID_PACKAGE_NAME" <<'PYTHON'
           import pathlib
           import re
           import sys
 
           strings_file = pathlib.Path(sys.argv[1])
           build_file = pathlib.Path(sys.argv[2])
-          label = "GRE Vocab Flash Cards"
-          package_name = "com.imahir.grevocabapp"
+          label = sys.argv[3]
+          package_name = sys.argv[4]
 
           if not strings_file.exists():
             raise SystemExit(f"Missing file: {strings_file}")
@@ -136,7 +136,7 @@ jobs:
             build_gradle,
           )
           build_file.write_text(build_gradle)
-          PY
+          PYTHON
 
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             cp "$RELEASE_ANDROID_ICON" "android/app/src/main/res/mipmap-$density/ic_launcher.png"
