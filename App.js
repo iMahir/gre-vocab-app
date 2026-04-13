@@ -65,7 +65,7 @@ const SWIPE_THRESHOLD = 90;
 const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
 const INCORRECT_ANSWER_VIBRATION_MS = 120;
 const CARD_MIN_HEIGHT = 300;
-const ANDROID_STATUS_BAR_MARGIN = 10;
+const ANDROID_STATUS_BAR_MARGIN_PX = 10;
 const DASHBOARD_MIN_SEGMENT_FLEX = 1;
 
 function shuffleArray(values) {
@@ -123,7 +123,7 @@ export default function App() {
   const totalWords = words.length;
   const topPadding =
     Platform.OS === 'android'
-      ? (RNStatusBar.currentHeight ?? 0) + ANDROID_STATUS_BAR_MARGIN
+      ? (RNStatusBar.currentHeight ?? 0) + ANDROID_STATUS_BAR_MARGIN_PX
       : 12;
 
   const uniqueDefinitionCount = useMemo(
@@ -1004,7 +1004,10 @@ export default function App() {
                 ].map(([label, key]) => (
                   <View key={key} style={styles.dashboardSegmentItem}>
                     <View style={[styles.dashboardSegmentDot, { backgroundColor: STATE_COLORS[key] }]} />
-                    <Text style={styles.dashboardSegmentText}>
+                    <Text
+                      style={styles.dashboardSegmentText}
+                      accessibilityLabel={`${label}: ${globalCounts[key]} of ${allWordsCount} words`}
+                    >
                       {label}: {globalCounts[key]}/{allWordsCount}
                     </Text>
                   </View>
@@ -1017,7 +1020,9 @@ export default function App() {
 
             {/* Search Bar */}
             <View style={styles.searchWrap}>
-              <Text style={styles.searchIcon}>🔎</Text>
+              <Text style={styles.searchIcon} accessible={false}>
+                🔎
+              </Text>
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search words..."
