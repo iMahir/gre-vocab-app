@@ -118,10 +118,9 @@ jobs:
           if 'name="app_name"' not in strings:
             raise SystemExit('app_name string missing in strings.xml')
           strings = re.sub(
-            r'(<string\\s+name="app_name">)(.*?)(</string>)',
-            rf'\\1{label}\\3',
+            r'(<string\\s+name="app_name">)[^<]*(</string>)',
+            rf'\\1{label}\\2',
             strings,
-            flags=re.DOTALL,
           )
           strings_file.write_text(strings)
 
@@ -185,8 +184,8 @@ jobs:
       - name: Verify Android release identity and package artifact
         run: |
           set -euo pipefail
-          grep -Eq 'applicationId\\s+"com\\.imahir\\.grevocabapp"' android/app/build.gradle
-          grep -Fq '<string name="app_name">GRE Vocab Flash Cards</string>' android/app/src/main/res/values/strings.xml
+          grep -Eq "applicationId\\s+\"$RELEASE_ANDROID_PACKAGE_NAME\"" android/app/build.gradle
+          grep -Fq "<string name=\"app_name\">$RELEASE_ANDROID_APP_LABEL</string>" android/app/src/main/res/values/strings.xml
           test -f android/app/src/main/res/drawable/ic_launcher_foreground.png
           test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
 
