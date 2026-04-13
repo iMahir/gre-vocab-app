@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   FlatList,
   Modal,
   PanResponder,
+  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
+  StatusBar as RNStatusBar,
   Text,
   TextInput,
   Vibration,
@@ -112,6 +115,7 @@ export default function App() {
     selectedGroupIndex === null ? null : groups[selectedGroupIndex] ?? null;
   const words = selectedGroup?.words ?? [];
   const totalWords = words.length;
+  const topInsetPadding = Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 0) + 10 : 12;
 
   const uniqueDefinitionCount = useMemo(
     () =>
@@ -191,6 +195,24 @@ export default function App() {
       .filter((w) => w.word.toLowerCase().includes(lowerQuery));
   }, [searchQuery, groups]);
 
+  const refreshGlobalStatuses = useCallback(async (groupsToScan) => {
+    const scanGroups = Array.isArray(groupsToScan) ? groupsToScan : [];
+    let allStatuses = {};
+    for (const group of scanGroups) {
+      const saved = await AsyncStorage.getItem(STORAGE_KEYS.statuses(group.group));
+      if (!saved) continue;
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          allStatuses = { ...allStatuses, ...parsed };
+        }
+      } catch {
+        // Ignore corrupted saved statuses for one group
+      }
+    }
+    setGlobalStatuses(allStatuses);
+  }, []);
+
   const loadWords = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -204,22 +226,13 @@ export default function App() {
         throw new Error('Invalid words payload.');
       }
       setGroups(payload);
-
-      // Load all global statuses to calculate overall progress
-      let allStatuses = {};
-      for (const group of payload) {
-        const saved = await AsyncStorage.getItem(STORAGE_KEYS.statuses(group.group));
-        if (saved) {
-          allStatuses = { ...allStatuses, ...JSON.parse(saved) };
-        }
-      }
-      setGlobalStatuses(allStatuses);
+      await refreshGlobalStatuses(payload);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load words.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshGlobalStatuses]);
 
   useEffect(() => {
     loadWords();
@@ -345,6 +358,82 @@ export default function App() {
     setQuizScore({ correct: 0, total: 0 });
     setSearchQuery('');
   }, [flipAnim, pan, resetQuizState]);
+
+  const resetSelectedDeckState = useCallback(() => {
+    setStatuses({});
+    setCardIndex(0);
+    setStudyMode(null);
+    setShowDetails(false);
+    flipAnim.setValue(0);
+    pan.setValue({ x: 0, y: 0 });
+    resetQuizState();
+    setQuizScore({ correct: 0, total: 0 });
+  }, [flipAnim, pan, resetQuizState]);
+
+  const confirmResetGroupProgress = useCallback(
+    (group) => {
+      if (!group?.group) return;
+
+      Alert.alert(
+        'Reset Group Progress',
+        `This will clear your saved progress for ${group.group}.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Reset',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await AsyncStorage.multiRemove([
+                  STORAGE_KEYS.statuses(group.group),
+                  STORAGE_KEYS.cardIndex(group.group),
+                ]);
+                if (selectedGroup?.group === group.group) {
+                  resetSelectedDeckState();
+                }
+                await refreshGlobalStatuses(groups);
+                setError('');
+              } catch {
+                setError('Could not reset progress for this group.');
+              }
+            },
+          },
+        ]
+      );
+    },
+    [groups, refreshGlobalStatuses, resetSelectedDeckState, selectedGroup]
+  );
+
+  const confirmResetAllProgress = useCallback(() => {
+    Alert.alert(
+      'Reset All Progress',
+      'This will clear all saved progress for every group.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const allStorageKeys = await AsyncStorage.getAllKeys();
+              const progressKeys = allStorageKeys.filter(
+                (key) =>
+                  key.startsWith('gre/statuses/') || key.startsWith('gre/card-index/')
+              );
+              if (progressKeys.length) {
+                await AsyncStorage.multiRemove(progressKeys);
+              }
+              resetSelectedDeckState();
+              await refreshGlobalStatuses(groups);
+              setError('');
+            } catch {
+              setError('Could not reset all progress.');
+            }
+          },
+        },
+      ]
+    );
+  }, [groups, refreshGlobalStatuses, resetSelectedDeckState]);
 
   const playPronunciation = useCallback(async () => {
     if (!currentWord?.audio_url) return;
@@ -581,7 +670,7 @@ export default function App() {
   if (loading) {
     return (
       <SafeAreaView style={styles.base}>
-        <StatusBar style="light" />
+        <ExpoStatusBar style="light" />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#fff" />
           <Text style={styles.infoText}>Loading GRE words...</Text>
@@ -592,8 +681,8 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.base}>
-      <StatusBar style="light" />
-      <View style={styles.container}>
+      <ExpoStatusBar style="light" />
+      <View style={[styles.container, { paddingTop: topInsetPadding }]}>
         <Text style={styles.appTitle}>GRE Vocab</Text>
 
         {error ? (
@@ -885,6 +974,9 @@ export default function App() {
                   ]}
                 />
               </View>
+              <Pressable style={styles.resetAllButton} onPress={confirmResetAllProgress}>
+                <Text style={styles.resetAllButtonText}>Reset all progress</Text>
+              </Pressable>
             </View>
 
             {/* Search Bar */}
@@ -915,10 +1007,18 @@ export default function App() {
                 keyExtractor={(item, index) => `${item.group}-${index}`}
                 contentContainerStyle={styles.deckListContent}
                 renderItem={({ item, index }) => (
-                  <Pressable style={styles.deckButton} onPress={() => openGroup(index)}>
-                    <Text style={styles.deckTitle}>{item.group}</Text>
-                    <Text style={styles.deckMeta}>{item.words?.length ?? 0} words</Text>
-                  </Pressable>
+                  <View style={styles.deckButton}>
+                    <Pressable style={styles.deckMainArea} onPress={() => openGroup(index)}>
+                      <Text style={styles.deckTitle}>{item.group}</Text>
+                      <Text style={styles.deckMeta}>{item.words?.length ?? 0} words</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.resetGroupButton}
+                      onPress={() => confirmResetGroupProgress(item)}
+                    >
+                      <Text style={styles.resetGroupButtonText}>Reset</Text>
+                    </Pressable>
+                  </View>
                 )}
               />
             )}
@@ -976,7 +1076,7 @@ export default function App() {
 
 const styles = StyleSheet.create({
   base: { flex: 1, backgroundColor: '#050505' },
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  container: { flex: 1, paddingHorizontal: 16, paddingBottom: 8 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   appTitle: { color: '#fff', fontSize: 28, marginBottom: 16, fontFamily: 'Poppins_700Bold' },
   sectionTitle: { color: '#fff', fontSize: 18, marginBottom: 12, fontFamily: 'Poppins_600SemiBold' },
@@ -998,9 +1098,12 @@ const styles = StyleSheet.create({
   // Decks
   deckListWrap: { flex: 1 },
   deckListContent: { paddingBottom: 20 },
-  deckButton: { borderWidth: 1, borderColor: '#252525', borderRadius: 16, padding: 18, marginBottom: 12, backgroundColor: '#111' },
+  deckButton: { borderWidth: 1, borderColor: '#252525', borderRadius: 16, marginBottom: 12, backgroundColor: '#111', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  deckMainArea: { flex: 1, padding: 18 },
   deckTitle: { color: '#fff', fontSize: 17, fontFamily: 'Poppins_600SemiBold' },
   deckMeta: { color: '#888', marginTop: 4, fontFamily: 'Poppins_400Regular' },
+  resetGroupButton: { marginRight: 14, borderWidth: 1, borderColor: '#444', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#171717' },
+  resetGroupButtonText: { color: '#ddd', fontSize: 12, fontFamily: 'Poppins_500Medium' },
 
   // Header
   deckScreen: { flex: 1 },
@@ -1036,6 +1139,8 @@ const styles = StyleSheet.create({
   // Progress UI
   compactProgressArea: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 16, backgroundColor: '#333' },
   compactProgressSegment: { height: '100%' },
+  resetAllButton: { alignSelf: 'flex-end', borderWidth: 1, borderColor: '#444', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#111' },
+  resetAllButtonText: { color: '#ddd', fontSize: 12, fontFamily: 'Poppins_500Medium' },
 
   // Action Buttons
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 24 },
