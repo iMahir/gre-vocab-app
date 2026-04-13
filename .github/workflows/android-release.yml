@@ -29,6 +29,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Patch legacy Android support dependencies
+        run: |
+          VOICE_GRADLE="node_modules/@react-native-voice/voice/android/build.gradle"
+          if [ -f "$VOICE_GRADLE" ]; then
+            sed -i 's|implementation "com.android.support:appcompat-v7:${supportVersion}"|implementation "androidx.appcompat:appcompat:1.7.0"|' "$VOICE_GRADLE"
+          fi
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
