@@ -108,6 +108,30 @@ function extractJsonObject(value) {
   }
 }
 
+function sanitizePromptInput(value) {
+  return String(value || '')
+    .replace(/[{}[\]<>`]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 400);
+}
+
+function normalizeSpeechEvaluation(result) {
+  if (!result || typeof result !== 'object' || typeof result.feedback !== 'string') {
+    throw new Error('AI returned malformed evaluation data.');
+  }
+  if (typeof result.match !== 'boolean') {
+    throw new Error('AI response must include boolean field: match.');
+  }
+
+  const rawScore = Number(result.score);
+  return {
+    match: result.match,
+    score: Number.isFinite(rawScore) ? Math.max(0, Math.min(100, rawScore)) : 0,
+    feedback: result.feedback.trim() || 'No feedback available.',
+  };
+}
+
 async function evaluateWithGemini({ apiKey, model, prompt }) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
@@ -151,6 +175,7 @@ async function evaluateWithOpenAI({ apiKey, model, prompt }) {
       messages: [
         {
           role: 'system',
+          // Keep the literal word "JSON" in this prompt; OpenAI JSON mode depends on it.
           content:
             'You grade vocabulary meaning answers. Return strict JSON with keys: match(boolean), score(number 0-100), feedback(string).',
         },
@@ -717,7 +742,7 @@ export default function App() {
 
   const evaluateSpeechAnswer = useCallback(async () => {
     if (!currentWord) return;
-    const spokenAnswer = (speechTranscript || speechInterim).trim();
+    const spokenAnswer = sanitizePromptInput(speechTranscript || speechInterim);
     if (!spokenAnswer) {
       setSpeechError('Please speak your meaning first.');
       return;
@@ -759,11 +784,7 @@ Return JSON only:
       if (!result) {
         throw new Error('AI returned an unreadable response.');
       }
-      const normalized = {
-        match: Boolean(result.match),
-        score: Number.isFinite(Number(result.score)) ? Math.max(0, Math.min(100, Number(result.score))) : 0,
-        feedback: String(result.feedback || 'No feedback available.'),
-      };
+      const normalized = normalizeSpeechEvaluation(result);
       setSpeechEvaluation(normalized);
     } catch (err) {
       setSpeechError(err?.message || 'Could not evaluate your spoken answer.');
