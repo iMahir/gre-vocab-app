@@ -40,8 +40,9 @@ jobs:
         run: |
           if [ ! -d android ]; then
             RN_VERSION=$(node -p "require('./package.json').dependencies['react-native']")
-            APP_NAME=$(node -p "require('./app.json').name || 'main'")
+            APP_NAME=$(node -e "try { const app = require('./app.json'); console.log(app.name || 'main'); } catch (_) { console.log('main'); }")
             TMP_NATIVE_DIR=$(mktemp -d /tmp/rn-native-shell-XXXXXX)
+            trap 'rm -rf "$TMP_NATIVE_DIR"' EXIT
             npx @react-native-community/cli init "$APP_NAME" \
               --version "$RN_VERSION" \
               --directory "$TMP_NATIVE_DIR" \
