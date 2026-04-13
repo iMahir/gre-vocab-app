@@ -16,6 +16,8 @@ jobs:
   build-and-release:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
+    env:
+      ANDROIDX_APPCOMPAT_VERSION: '1.7.0'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,7 +34,6 @@ jobs:
       - name: Patch legacy Android support dependencies
         run: |
           VOICE_GRADLE="node_modules/@react-native-voice/voice/android/build.gradle"
-          ANDROIDX_APPCOMPAT_VERSION="1.7.0"
           if [ ! -f "$VOICE_GRADLE" ]; then
             echo "Expected file not found: $VOICE_GRADLE"
             exit 1
