@@ -76,7 +76,7 @@ jobs:
         env:
           EXPO_TOKEN: ${{ env.EXPO_TOKEN }}
           EXPO_PROJECT_ID: ${{ env.EXPO_PROJECT_ID }}
-        run: npx eas-cli@latest update --branch production --platform android --message "Android release ${{ steps.tag.outputs.value }}" --non-interactive
+        run: npx eas-cli@latest update --channel production --platform android --message "Android release ${{ steps.tag.outputs.value }}" --non-interactive
 
       - name: Warn when OTA publish is skipped
         if: ${{ env.EXPO_TOKEN == '' || env.EXPO_PROJECT_ID == '' }}
