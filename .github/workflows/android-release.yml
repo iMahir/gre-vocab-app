@@ -117,7 +117,7 @@ jobs:
           strings = strings_file.read_text()
           if 'name="app_name"' not in strings:
             raise SystemExit('app_name string missing in strings.xml')
-          app_name_pattern = re.compile(r'(<string\\s+name="app_name">)[^<]*(</string>)')
+          app_name_pattern = re.compile(r'(<string\s+name="app_name">)[^<]*(</string>)')
           if not app_name_pattern.search(strings):
             raise SystemExit('Unable to locate app_name string tag in strings.xml')
           strings = app_name_pattern.sub(lambda m: f'{m.group(1)}{label}{m.group(2)}', strings, count=1)
@@ -128,11 +128,11 @@ jobs:
           build_gradle = build_file.read_text()
           if 'applicationId' not in build_gradle:
             raise SystemExit('applicationId not found in android/app/build.gradle')
-          package_pattern = re.compile(r'^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+$')
+          package_pattern = re.compile(r'^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$')
           if not package_pattern.fullmatch(package_name):
             raise SystemExit(f'Invalid Android package name: {package_name}')
           build_gradle = re.sub(
-            r'applicationId\\s+"[^"]+"',
+            r'applicationId\s+"[^"]+"',
             lambda _: f'applicationId "{package_name}"',
             build_gradle,
             count=1,
