@@ -36,6 +36,21 @@ jobs:
           java-version: '17'
           cache: gradle
 
+      - name: Generate Android native project (if missing)
+        run: |
+          if [ ! -d android ]; then
+            RN_VERSION=$(node -p "require('./package.json').dependencies['react-native']")
+            APP_NAME=$(node -p "require('./app.json').name || 'main'")
+            TMP_NATIVE_DIR=$(mktemp -d /tmp/rn-native-shell-XXXXXX)
+            npx @react-native-community/cli init "$APP_NAME" \
+              --version "$RN_VERSION" \
+              --directory "$TMP_NATIVE_DIR" \
+              --package-name com.grevocabapp \
+              --skip-install \
+              --skip-git-init
+            cp -R "$TMP_NATIVE_DIR/android" ./android
+          fi
+
       - name: Increase Gradle JVM memory
         run: |
           if grep -q '^org.gradle.jvmargs=' android/gradle.properties; then
