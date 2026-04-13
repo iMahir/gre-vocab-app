@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import {
   ActivityIndicator,
   Alert,
@@ -12,6 +11,7 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  PermissionsAndroid,
   StatusBar as RNStatusBar,
   Text,
   TextInput,
@@ -19,15 +19,7 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av';
-import * as Updates from 'expo-updates';
-import {
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-  useFonts,
-} from '@expo-google-fonts/poppins';
+import Voice from '@react-native-voice/voice';
 
 const DATA_URL =
   'https://raw.githubusercontent.com/iMahir/gre-vocab-app/refs/heads/main/GRE_Words.json';
@@ -48,11 +40,28 @@ const STATE_COLORS = {
 const STUDY_MODES = {
   flashcard: 'flashcard',
   quiz: 'quiz',
+  speaking: 'speaking',
+};
+
+const APP_SCREENS = {
+  decks: 'decks',
+  settings: 'settings',
+};
+
+const AI_PROVIDERS = {
+  gemini: 'gemini',
+  openai: 'openai',
+};
+
+const DEFAULT_MODELS = {
+  [AI_PROVIDERS.gemini]: 'gemini-2.0-flash',
+  [AI_PROVIDERS.openai]: 'gpt-4o-mini',
 };
 
 const STORAGE_KEYS = {
   statuses: (groupName) => `gre/statuses/${groupName}`,
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
+  aiSettings: 'gre/ai-settings',
 };
 const STORAGE_PREFIXES = {
   statuses: STORAGE_KEYS.statuses(''),
@@ -87,17 +96,82 @@ function normalizeCardIndex(index, total) {
   return ((index % total) + total) % total;
 }
 
-export default function App() {
-  const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
+function extractJsonObject(value) {
+  if (!value) return null;
+  const start = value.indexOf('{');
+  const end = value.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    return JSON.parse(value.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+
+async function evaluateWithGemini({ apiKey, model, prompt }) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      model
+    )}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.1,
+        },
+      }),
+    }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || 'Gemini request failed.');
+  }
+
+  const rawText = payload?.candidates?.[0]?.content?.parts
+    ?.map((part) => part?.text)
+    .filter(Boolean)
+    .join('\n');
+  return extractJsonObject(rawText);
+}
+
+async function evaluateWithOpenAI({ apiKey, model, prompt }) {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.1,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You grade vocabulary meaning answers. Return strict JSON with keys: match(boolean), score(number 0-100), feedback(string).',
+        },
+        { role: 'user', content: prompt },
+      ],
+    }),
   });
 
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || 'OpenAI request failed.');
+  }
+  const rawText = payload?.choices?.[0]?.message?.content;
+  return extractJsonObject(rawText);
+}
+
+export default function App() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [appScreen, setAppScreen] = useState(APP_SCREENS.decks);
 
   const [selectedGroupIndex, setSelectedGroupIndex] = useState(null);
   const [studyMode, setStudyMode] = useState(null);
@@ -111,10 +185,23 @@ export default function App() {
   const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
   const [quizSummary, setQuizSummary] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [updatePromptVisible, setUpdatePromptVisible] = useState(false);
-  const [updatingNow, setUpdatingNow] = useState(false);
+  const [aiSettings, setAiSettings] = useState({
+    provider: AI_PROVIDERS.gemini,
+    model: DEFAULT_MODELS[AI_PROVIDERS.gemini],
+    apiKey: '',
+  });
+  const [settingsDraft, setSettingsDraft] = useState({
+    provider: AI_PROVIDERS.gemini,
+    model: DEFAULT_MODELS[AI_PROVIDERS.gemini],
+    apiKey: '',
+  });
+  const [speechTranscript, setSpeechTranscript] = useState('');
+  const [speechInterim, setSpeechInterim] = useState('');
+  const [speechError, setSpeechError] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isEvaluatingSpeech, setIsEvaluatingSpeech] = useState(false);
+  const [speechEvaluation, setSpeechEvaluation] = useState(null);
 
-  const soundRef = useRef(null);
   const autoAdvanceRef = useRef(null);
   const swipeBusyRef = useRef(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -256,25 +343,26 @@ export default function App() {
   }, [loadWords]);
 
   useEffect(() => {
-    // Skip OTA checks during development; they are intended for published production builds.
-    if (__DEV__) return;
-
-    let mounted = true;
-    const checkForUpdates = async () => {
+    const hydrateSettings = async () => {
       try {
-        const update = await Updates.checkForUpdateAsync();
-        if (mounted && update.isAvailable) {
-          setUpdatePromptVisible(true);
-        }
+        const saved = await AsyncStorage.getItem(STORAGE_KEYS.aiSettings);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        if (!parsed || typeof parsed !== 'object') return;
+        const provider =
+          parsed.provider === AI_PROVIDERS.openai ? AI_PROVIDERS.openai : AI_PROVIDERS.gemini;
+        const nextSettings = {
+          provider,
+          model: String(parsed.model || DEFAULT_MODELS[provider]),
+          apiKey: String(parsed.apiKey || ''),
+        };
+        setAiSettings(nextSettings);
+        setSettingsDraft(nextSettings);
       } catch {
-        // Ignore update check errors in environments that do not support OTA checks
+        setError('Could not load saved AI settings.');
       }
     };
-
-    checkForUpdates();
-    return () => {
-      mounted = false;
-    };
+    hydrateSettings();
   }, []);
 
   useEffect(() => {
@@ -287,12 +375,10 @@ export default function App() {
 
   useEffect(() => {
     return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-      }
       if (autoAdvanceRef.current !== null) {
         clearTimeout(autoAdvanceRef.current);
       }
+      Voice.destroy().then(Voice.removeAllListeners).catch(() => null);
     };
   }, []);
 
@@ -303,6 +389,43 @@ export default function App() {
     setQuizSelectedOption('');
     setQuizResult(null);
     setQuizSummary(null);
+  }, []);
+
+  const resetSpeakingState = useCallback(() => {
+    setSpeechTranscript('');
+    setSpeechInterim('');
+    setSpeechError('');
+    setSpeechEvaluation(null);
+    setIsListening(false);
+    Voice.cancel().catch(() => null);
+  }, []);
+
+  useEffect(() => {
+    Voice.onSpeechStart = () => {
+      setIsListening(true);
+      setSpeechError('');
+    };
+    Voice.onSpeechEnd = () => {
+      setIsListening(false);
+    };
+    Voice.onSpeechError = (event) => {
+      setIsListening(false);
+      const message = event?.error?.message || event?.error || 'Speech recognition failed.';
+      setSpeechError(String(message));
+    };
+    Voice.onSpeechPartialResults = (event) => {
+      const next = event?.value?.[0] || '';
+      setSpeechInterim(next);
+    };
+    Voice.onSpeechResults = (event) => {
+      const next = event?.value?.[0] || '';
+      setSpeechTranscript(next);
+      setSpeechInterim('');
+    };
+
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners).catch(() => null);
+    };
   }, []);
 
   const persistGroupProgress = useCallback(
@@ -338,6 +461,7 @@ export default function App() {
     flipAnim.setValue(0);
     pan.setValue({ x: 0, y: 0 });
     resetQuizState();
+    resetSpeakingState();
     setQuizScore({ correct: 0, total: 0 });
 
     try {
@@ -363,7 +487,7 @@ export default function App() {
       setCardIndex(0);
       setError('Could not read saved progress for this deck.');
     }
-  }, [flipAnim, groups, pan, resetQuizState]);
+  }, [flipAnim, groups, pan, resetQuizState, resetSpeakingState]);
 
   const backToDecks = useCallback(() => {
     setSelectedGroupIndex(null);
@@ -372,9 +496,10 @@ export default function App() {
     flipAnim.setValue(0);
     pan.setValue({ x: 0, y: 0 });
     resetQuizState();
+    resetSpeakingState();
     setQuizScore({ correct: 0, total: 0 });
     setSearchQuery('');
-  }, [flipAnim, pan, resetQuizState]);
+  }, [flipAnim, pan, resetQuizState, resetSpeakingState]);
 
   const resetSelectedDeckState = useCallback(() => {
     setStatuses({});
@@ -384,8 +509,9 @@ export default function App() {
     flipAnim.setValue(0);
     pan.setValue({ x: 0, y: 0 });
     resetQuizState();
+    resetSpeakingState();
     setQuizScore({ correct: 0, total: 0 });
-  }, [flipAnim, pan, resetQuizState]);
+  }, [flipAnim, pan, resetQuizState, resetSpeakingState]);
 
   const confirmResetGroupProgress = useCallback(
     (group) => {
@@ -454,24 +580,6 @@ export default function App() {
       ]
     );
   }, [groups, refreshGlobalStatuses, resetSelectedDeckState]);
-
-  const playPronunciation = useCallback(async () => {
-    if (!currentWord?.audio_url) return;
-
-    try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-      const { sound } = await Audio.Sound.createAsync({
-        uri: currentWord.audio_url,
-      });
-      soundRef.current = sound;
-      await sound.playAsync();
-    } catch {
-      setError('Unable to play pronunciation audio.');
-    }
-  }, [currentWord]);
 
   useEffect(() => {
     if (!currentWord || studyMode !== STUDY_MODES.quiz) {
@@ -558,17 +666,111 @@ export default function App() {
     }).start();
   }, [pan]);
 
-  const applyAvailableUpdate = useCallback(async () => {
-    setUpdatingNow(true);
+  const saveAiSettings = useCallback(async () => {
+    const provider =
+      settingsDraft.provider === AI_PROVIDERS.openai ? AI_PROVIDERS.openai : AI_PROVIDERS.gemini;
+    const nextSettings = {
+      provider,
+      model: settingsDraft.model.trim() || DEFAULT_MODELS[provider],
+      apiKey: settingsDraft.apiKey.trim(),
+    };
     try {
-      await Updates.fetchUpdateAsync();
-      await Updates.reloadAsync();
+      await AsyncStorage.setItem(STORAGE_KEYS.aiSettings, JSON.stringify(nextSettings));
+      setAiSettings(nextSettings);
+      setSettingsDraft(nextSettings);
+      setError('');
+      Alert.alert('Saved', 'AI settings saved successfully.');
     } catch {
-      setError('Update download failed. Please try again.');
-      setUpdatePromptVisible(false);
-      setUpdatingNow(false);
+      setError('Could not save AI settings.');
+    }
+  }, [settingsDraft]);
+
+  const startListening = useCallback(async () => {
+    if (!currentWord) return;
+    try {
+      if (Platform.OS === 'android') {
+        const permission = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+        );
+        if (permission !== PermissionsAndroid.RESULTS.GRANTED) {
+          setSpeechError('Microphone permission is required.');
+          return;
+        }
+      }
+      setSpeechTranscript('');
+      setSpeechInterim('');
+      setSpeechError('');
+      setSpeechEvaluation(null);
+      await Voice.start('en-US');
+    } catch (err) {
+      setSpeechError(err?.message || 'Could not start voice recognition.');
+    }
+  }, [currentWord]);
+
+  const stopListening = useCallback(async () => {
+    try {
+      await Voice.stop();
+    } catch {
+      setSpeechError('Could not stop voice recognition.');
     }
   }, []);
+
+  const evaluateSpeechAnswer = useCallback(async () => {
+    if (!currentWord) return;
+    const spokenAnswer = (speechTranscript || speechInterim).trim();
+    if (!spokenAnswer) {
+      setSpeechError('Please speak your meaning first.');
+      return;
+    }
+    if (!aiSettings.apiKey.trim() || !aiSettings.model.trim()) {
+      setSpeechError('Open Settings and save your AI provider, model, and API key first.');
+      return;
+    }
+
+    const prompt = `Evaluate whether the user's meaning for a GRE word is roughly correct.
+Word: ${currentWord.word}
+Correct meaning: ${currentWord.definition}
+User spoken meaning: ${spokenAnswer}
+
+Return JSON only:
+{
+  "match": boolean,
+  "score": number,
+  "feedback": "brief actionable feedback in <= 2 sentences"
+}`;
+
+    try {
+      setIsEvaluatingSpeech(true);
+      setSpeechError('');
+      let result = null;
+      if (aiSettings.provider === AI_PROVIDERS.gemini) {
+        result = await evaluateWithGemini({
+          apiKey: aiSettings.apiKey.trim(),
+          model: aiSettings.model.trim(),
+          prompt,
+        });
+      } else {
+        result = await evaluateWithOpenAI({
+          apiKey: aiSettings.apiKey.trim(),
+          model: aiSettings.model.trim(),
+          prompt,
+        });
+      }
+      if (!result) {
+        throw new Error('AI returned an unreadable response.');
+      }
+      const normalized = {
+        match: Boolean(result.match),
+        score: Number.isFinite(Number(result.score)) ? Math.max(0, Math.min(100, Number(result.score))) : 0,
+        feedback: String(result.feedback || 'No feedback available.'),
+      };
+      setSpeechEvaluation(normalized);
+    } catch (err) {
+      setSpeechError(err?.message || 'Could not evaluate your spoken answer.');
+    } finally {
+      setIsEvaluatingSpeech(false);
+    }
+  }, [aiSettings, currentWord, speechInterim, speechTranscript]);
 
   const panResponder = useMemo(
     () =>
@@ -610,8 +812,9 @@ export default function App() {
       flipAnim.setValue(0);
       pan.setValue({ x: 0, y: 0 });
       resetQuizState();
+      resetSpeakingState();
     },
-    [canPlayQuiz, flipAnim, pan, resetQuizState]
+    [canPlayQuiz, flipAnim, pan, resetQuizState, resetSpeakingState]
   );
 
   const backToModes = useCallback(() => {
@@ -620,7 +823,8 @@ export default function App() {
     flipAnim.setValue(0);
     pan.setValue({ x: 0, y: 0 });
     resetQuizState();
-  }, [flipAnim, pan, resetQuizState]);
+    resetSpeakingState();
+  }, [flipAnim, pan, resetQuizState, resetSpeakingState]);
 
   const nextQuizWord = useCallback(async () => {
     if (!totalWords) return;
@@ -665,11 +869,7 @@ export default function App() {
     [currentWord, nextQuizWord, quizResult, quizScore.correct, quizScore.total]
   );
 
-  const pronunciationButton = currentWord?.audio_url && (
-    <Pressable style={styles.audioIcon} onPress={playPronunciation}>
-      <Text style={styles.audioIconText}>🔊</Text>
-    </Pressable>
-  );
+  const pronunciationButton = null;
 
   const frontInterpolate = flipAnim.interpolate({
     inputRange: [0, 1],
@@ -685,12 +885,10 @@ export default function App() {
     extrapolate: 'clamp',
   });
 
-  if (!fontsLoaded) return null;
-
   if (loading) {
     return (
       <SafeAreaView style={styles.base}>
-        <ExpoStatusBar style="light" />
+        <RNStatusBar barStyle="light-content" backgroundColor="#050505" />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#fff" />
           <Text style={styles.infoText}>Loading GRE words...</Text>
@@ -701,9 +899,25 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.base}>
-      <ExpoStatusBar style="light" />
+      <RNStatusBar barStyle="light-content" backgroundColor="#050505" />
       <View style={[styles.container, { paddingTop: topPadding }]}>
-        <Text style={styles.appTitle}>GRE Vocab</Text>
+        <View style={styles.appHeaderRow}>
+          <Text style={styles.appTitle}>GRE Vocab</Text>
+          {!selectedGroup ? (
+            <Pressable
+              style={styles.settingsTopButton}
+              onPress={() =>
+                setAppScreen((prev) =>
+                  prev === APP_SCREENS.settings ? APP_SCREENS.decks : APP_SCREENS.settings
+                )
+              }
+            >
+              <Text style={styles.settingsTopButtonText}>
+                {appScreen === APP_SCREENS.settings ? 'Decks' : 'Settings'}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         {error ? (
           <View style={styles.errorBox}>
@@ -761,6 +975,12 @@ export default function App() {
                   <Text style={styles.modeCardTitle}>Meaning Quiz</Text>
                   <Text style={styles.modeCardMeta}>
                     Choose the correct definition from options.
+                  </Text>
+                </Pressable>
+                <Pressable style={styles.modeCard} onPress={() => selectMode(STUDY_MODES.speaking)}>
+                  <Text style={styles.modeCardTitle}>Voice Meaning Check</Text>
+                  <Text style={styles.modeCardMeta}>
+                    Speak the meaning and get AI feedback.
                   </Text>
                 </Pressable>
               </View>
@@ -899,7 +1119,7 @@ export default function App() {
                       </Pressable>
                     </View>
                   </>
-                ) : (
+                ) : studyMode === STUDY_MODES.quiz ? (
                   <View style={styles.quizWrap}>
                     <View style={styles.card}>
                       <View style={styles.cardTopRow}>{pronunciationButton}</View>
@@ -943,9 +1163,166 @@ export default function App() {
                       Score: {quizScore.correct}/{quizScore.total}
                     </Text>
                   </View>
+                ) : (
+                  <View style={styles.quizWrap}>
+                    <View style={styles.card}>
+                      <View style={styles.cardTopRow}>{pronunciationButton}</View>
+                      <Text style={styles.quizPrompt}>Speak the meaning of this word</Text>
+                      <Text style={styles.wordText}>{currentWord.word}</Text>
+                    </View>
+
+                    <View style={styles.speakingPanel}>
+                      <Pressable
+                        style={[
+                          styles.nextButton,
+                          isListening ? styles.speakingButtonActive : styles.speakingButton,
+                        ]}
+                        onPress={isListening ? stopListening : startListening}
+                      >
+                        <Text style={styles.nextButtonText}>
+                          {isListening ? 'Stop Listening' : 'Start Speaking'}
+                        </Text>
+                      </Pressable>
+                      <Text style={styles.speakingTranscriptLabel}>Transcript</Text>
+                      <Text style={styles.speakingTranscriptValue}>
+                        {speechTranscript || speechInterim || 'Your spoken answer will appear here.'}
+                      </Text>
+                      {speechError ? <Text style={styles.speakingError}>{speechError}</Text> : null}
+                      <Pressable
+                        style={[styles.nextButton, styles.speakingCheckButton]}
+                        onPress={evaluateSpeechAnswer}
+                        disabled={isEvaluatingSpeech}
+                      >
+                        <Text style={styles.nextButtonText}>
+                          {isEvaluatingSpeech ? 'Checking...' : 'Check with AI'}
+                        </Text>
+                      </Pressable>
+
+                      {speechEvaluation ? (
+                        <View style={styles.speechResultCard}>
+                          <Text
+                            style={[
+                              styles.speechResultTitle,
+                              speechEvaluation.match
+                                ? styles.speechResultGood
+                                : styles.speechResultBad,
+                            ]}
+                          >
+                            {speechEvaluation.match ? 'Great Match ✅' : 'Needs Improvement ❌'}
+                          </Text>
+                          <Text style={styles.quizFeedbackText}>
+                            Score: {speechEvaluation.score}/100
+                          </Text>
+                          <Text style={styles.quizFeedbackText}>{speechEvaluation.feedback}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.actionRow}>
+                      <Pressable
+                        style={[styles.actionButton, { borderColor: STATE_COLORS.learning }]}
+                        onPress={() => classifyWord('learning')}
+                      >
+                        <Text style={[styles.actionText, { color: STATE_COLORS.learning }]}>
+                          Learn
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.actionButton, { borderColor: STATE_COLORS.reviewing }]}
+                        onPress={() => classifyWord('reviewing')}
+                      >
+                        <Text style={[styles.actionText, { color: STATE_COLORS.reviewing }]}>
+                          Review
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.actionButton, { borderColor: STATE_COLORS.mastered }]}
+                        onPress={() => classifyWord('mastered')}
+                      >
+                        <Text style={[styles.actionText, { color: STATE_COLORS.mastered }]}>
+                          I Know
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
                 )}
               </>
             ) : null}
+          </View>
+        ) : appScreen === APP_SCREENS.settings ? (
+          <View style={styles.settingsScreen}>
+            <Text style={styles.sectionTitle}>AI Settings</Text>
+            <Text style={styles.modeCardMeta}>
+              Choose your provider, model, and API key for voice answer checks.
+            </Text>
+
+            <View style={styles.settingsProviderRow}>
+              <Pressable
+                style={[
+                  styles.settingsProviderButton,
+                  settingsDraft.provider === AI_PROVIDERS.gemini && styles.settingsProviderButtonActive,
+                ]}
+                onPress={() =>
+                  setSettingsDraft((prev) => ({
+                    ...prev,
+                    provider: AI_PROVIDERS.gemini,
+                    model:
+                      prev.provider === AI_PROVIDERS.gemini
+                        ? prev.model
+                        : DEFAULT_MODELS[AI_PROVIDERS.gemini],
+                  }))
+                }
+              >
+                <Text style={styles.settingsProviderButtonText}>Gemini</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.settingsProviderButton,
+                  settingsDraft.provider === AI_PROVIDERS.openai && styles.settingsProviderButtonActive,
+                ]}
+                onPress={() =>
+                  setSettingsDraft((prev) => ({
+                    ...prev,
+                    provider: AI_PROVIDERS.openai,
+                    model:
+                      prev.provider === AI_PROVIDERS.openai
+                        ? prev.model
+                        : DEFAULT_MODELS[AI_PROVIDERS.openai],
+                  }))
+                }
+              >
+                <Text style={styles.settingsProviderButtonText}>ChatGPT</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.settingsLabel}>Model</Text>
+            <TextInput
+              style={styles.settingsInput}
+              placeholder="e.g. gemini-2.0-flash or gpt-4o-mini"
+              placeholderTextColor="#777"
+              value={settingsDraft.model}
+              onChangeText={(value) => setSettingsDraft((prev) => ({ ...prev, model: value }))}
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.settingsLabel}>API Key</Text>
+            <TextInput
+              style={styles.settingsInput}
+              placeholder="Paste your API key"
+              placeholderTextColor="#777"
+              value={settingsDraft.apiKey}
+              onChangeText={(value) => setSettingsDraft((prev) => ({ ...prev, apiKey: value }))}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+            />
+
+            <Pressable style={styles.modalButton} onPress={saveAiSettings}>
+              <Text style={styles.modalButtonText}>Save Settings</Text>
+            </Pressable>
+            <Text style={styles.settingsHint}>
+              Active: {aiSettings.provider} • {aiSettings.model || 'No model'}
+            </Text>
           </View>
         ) : (
           <View style={styles.deckListWrap}>
@@ -1101,31 +1478,6 @@ export default function App() {
           </View>
         </View>
       </Modal>
-      <Modal visible={updatePromptVisible || updatingNow} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Update Available</Text>
-            <Text style={styles.modalBody}>
-              A new app update is ready. Install now for the latest words and improvements.
-            </Text>
-            {updatingNow ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <View style={styles.modalActions}>
-                <Pressable
-                  style={[styles.modalButton, styles.modalButtonSecondary]}
-                  onPress={() => setUpdatePromptVisible(false)}
-                >
-                  <Text style={styles.modalButtonText}>Later</Text>
-                </Pressable>
-                <Pressable style={styles.modalButton} onPress={applyAvailableUpdate}>
-                  <Text style={styles.modalButtonText}>Update Now</Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -1134,7 +1486,10 @@ const styles = StyleSheet.create({
   base: { flex: 1, backgroundColor: '#050505' },
   container: { flex: 1, paddingHorizontal: 16, paddingBottom: 8 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  appTitle: { color: '#fff', fontSize: 28, marginBottom: 16, fontFamily: 'Poppins_700Bold' },
+  appHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  appTitle: { color: '#fff', fontSize: 28, fontFamily: 'Poppins_700Bold' },
+  settingsTopButton: { borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#111' },
+  settingsTopButtonText: { color: '#fff', fontSize: 12, fontFamily: 'Poppins_500Medium' },
   sectionTitle: { color: '#fff', fontSize: 18, marginBottom: 12, fontFamily: 'Poppins_600SemiBold' },
 
   // Dashboard & Search
@@ -1229,8 +1584,27 @@ const styles = StyleSheet.create({
   quizFeedbackText: { color: '#ddd', fontSize: 14, fontFamily: 'Poppins_400Regular', textAlign: 'center', marginBottom: 12 },
   nextButton: { backgroundColor: '#333', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20 },
   nextButtonText: { color: '#fff', fontFamily: 'Poppins_600SemiBold' },
+  speakingPanel: { borderWidth: 1, borderColor: '#252525', borderRadius: 12, padding: 14, backgroundColor: '#111', gap: 10 },
+  speakingButton: { backgroundColor: '#2A2A2A' },
+  speakingButtonActive: { backgroundColor: '#3B2A1A' },
+  speakingCheckButton: { marginTop: 6, alignSelf: 'flex-start' },
+  speakingTranscriptLabel: { color: '#aaa', fontSize: 12, fontFamily: 'Poppins_500Medium' },
+  speakingTranscriptValue: { color: '#fff', fontSize: 14, fontFamily: 'Poppins_400Regular', minHeight: 42 },
+  speakingError: { color: '#F44336', fontSize: 13, fontFamily: 'Poppins_400Regular' },
+  speechResultCard: { borderWidth: 1, borderColor: '#2e2e2e', borderRadius: 10, padding: 12, backgroundColor: '#171717' },
+  speechResultTitle: { fontSize: 16, marginBottom: 6, fontFamily: 'Poppins_600SemiBold' },
+  speechResultGood: { color: '#4CAF50' },
+  speechResultBad: { color: '#F44336' },
   quizScoreText: { color: '#888', textAlign: 'center', fontFamily: 'Poppins_500Medium' },
   infoText: { color: '#888', textAlign: 'center', fontFamily: 'Poppins_500Medium', marginTop: 20 },
+  settingsScreen: { borderWidth: 1, borderColor: '#252525', borderRadius: 16, backgroundColor: '#111', padding: 16, gap: 10 },
+  settingsProviderRow: { flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 6 },
+  settingsProviderButton: { flex: 1, borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  settingsProviderButtonActive: { borderColor: '#fff', backgroundColor: '#1d1d1d' },
+  settingsProviderButtonText: { color: '#fff', fontFamily: 'Poppins_500Medium' },
+  settingsLabel: { color: '#bbb', fontSize: 13, fontFamily: 'Poppins_500Medium' },
+  settingsInput: { borderWidth: 1, borderColor: '#2f2f2f', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: '#fff', fontFamily: 'Poppins_400Regular', backgroundColor: '#090909' },
+  settingsHint: { color: '#777', fontSize: 12, marginTop: 4, fontFamily: 'Poppins_400Regular' },
 
   errorBox: { marginBottom: 12, borderWidth: 1, borderColor: '#301818', borderRadius: 12, padding: 12, backgroundColor: '#1A0B0B' },
   errorText: { color: '#F44336', marginBottom: 8, fontFamily: 'Poppins_400Regular' },
