@@ -38,15 +38,21 @@ jobs:
 
       - name: Generate Android native project (if missing)
         run: |
+          set -euo pipefail
           if [ ! -d android ]; then
-            RN_VERSION=$(node -e "const pkg = require('./package.json'); const version = (pkg.dependencies && pkg.dependencies['react-native']) || (pkg.devDependencies && pkg.devDependencies['react-native']); if (!version) { console.error('react-native dependency missing in package.json'); process.exit(1); } console.log(version);")
+            RN_VERSION=$(node -e "const pkg = require('./package.json'); const version = (pkg.dependencies && pkg.dependencies['react-native']) || (pkg.devDependencies && pkg.devDependencies['react-native']); if (!version) { console.error('react-native dependency missing in package.json'); process.exit(1); } console.log(String(version).replace(/^[~^]/, ''));")
             APP_NAME=$(node -e "try { const app = require('./app.json'); console.log(app.name || 'AndroidBuildApp'); } catch (_) { console.log('AndroidBuildApp'); }")
+            PACKAGE_SUFFIX=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+            if [ -z "$PACKAGE_SUFFIX" ]; then
+              PACKAGE_SUFFIX=androidbuildapp
+            fi
+            PACKAGE_NAME="com.$PACKAGE_SUFFIX"
             TMP_NATIVE_DIR=$(mktemp -d)
             trap 'rm -rf "$TMP_NATIVE_DIR"' EXIT
             npx @react-native-community/cli init "$APP_NAME" \
               --version "$RN_VERSION" \
               --directory "$TMP_NATIVE_DIR" \
-              --package-name com.grevocabapp \
+              --package-name "$PACKAGE_NAME" \
               --skip-install \
               --skip-git-init
             cp -R "$TMP_NATIVE_DIR/android" ./android
