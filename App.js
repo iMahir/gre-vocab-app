@@ -16,8 +16,7 @@ import {
   Text,
   TextInput,
   Vibration,
-  View,
-} from 'react-native';
+  View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Voice from '@react-native-voice/voice';
 import * as Keychain from 'react-native-keychain';
@@ -28,8 +27,7 @@ const DATA_URL =
 const STATE_LABELS = {
   mastered: 'Mastered',
   reviewing: 'Reviewing',
-  learning: 'Learning',
-};
+  learning: 'Learning' };
 
 // UI Colors for states
 const STATE_COLORS = {
@@ -41,34 +39,28 @@ const STATE_COLORS = {
 const STUDY_MODES = {
   flashcard: 'flashcard',
   quiz: 'quiz',
-  speaking: 'speaking',
-};
+  speaking: 'speaking' };
 
 const APP_SCREENS = {
   decks: 'decks',
-  settings: 'settings',
-};
+  settings: 'settings' };
 
 const AI_PROVIDERS = {
   gemini: 'gemini',
-  openai: 'openai',
-};
+  openai: 'openai' };
 
 const DEFAULT_MODELS = {
   [AI_PROVIDERS.gemini]: 'gemini-2.0-flash',
-  [AI_PROVIDERS.openai]: 'gpt-4o-mini',
-};
+  [AI_PROVIDERS.openai]: 'gpt-4o-mini' };
 const AI_KEYCHAIN_SERVICE = 'gre/ai-api-key';
 
 const STORAGE_KEYS = {
   statuses: (groupName) => `gre/statuses/${groupName}`,
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
-  aiSettings: 'gre/ai-settings',
-};
+  aiSettings: 'gre/ai-settings' };
 const STORAGE_PREFIXES = {
   statuses: STORAGE_KEYS.statuses(''),
-  cardIndex: STORAGE_KEYS.cardIndex(''),
-};
+  cardIndex: STORAGE_KEYS.cardIndex('') };
 
 // Minimum flex value so a zero-count segment stays visible as a sliver
 const MIN_PROGRESS_FLEX = 0.01;
@@ -132,8 +124,7 @@ function normalizeSpeechEvaluation(result) {
   return {
     match: result.match,
     score: Number.isFinite(rawScore) ? Math.max(0, Math.min(100, rawScore)) : 0,
-    feedback: result.feedback.trim() || 'No feedback available.',
-  };
+    feedback: result.feedback.trim() || 'No feedback available.' };
 }
 
 async function evaluateWithGemini({ apiKey, model, prompt }) {
@@ -145,15 +136,11 @@ async function evaluateWithGemini({ apiKey, model, prompt }) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
+        'x-goog-api-key': apiKey },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.1,
-        },
-      }),
-    }
+          temperature: 0.1 } }) }
   );
 
   const payload = await response.json();
@@ -173,8 +160,7 @@ async function evaluateWithOpenAI({ apiKey, model, prompt }) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
+      Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model,
       temperature: 0.1,
@@ -182,14 +168,11 @@ async function evaluateWithOpenAI({ apiKey, model, prompt }) {
       messages: [
         {
           role: 'system',
-          // Keep the literal word "JSON" in this prompt; OpenAI JSON mode depends on it.
+          // OpenAI JSON mode requires the word "JSON" to appear in the system message.
           content:
-            'You grade vocabulary meaning answers. Return strict JSON with keys: match(boolean), score(number 0-100), feedback(string).',
-        },
+            'You grade vocabulary meaning answers. Return strict JSON with keys: match(boolean), score(number 0-100), feedback(string).' },
         { role: 'user', content: prompt },
-      ],
-    }),
-  });
+      ] }) });
 
   const payload = await response.json();
   if (!response.ok) {
@@ -220,13 +203,11 @@ export default function App() {
   const [aiSettings, setAiSettings] = useState({
     provider: AI_PROVIDERS.gemini,
     model: DEFAULT_MODELS[AI_PROVIDERS.gemini],
-    apiKey: '',
-  });
+    apiKey: '' });
   const [settingsDraft, setSettingsDraft] = useState({
     provider: AI_PROVIDERS.gemini,
     model: DEFAULT_MODELS[AI_PROVIDERS.gemini],
-    apiKey: '',
-  });
+    apiKey: '' });
   const [speechTranscript, setSpeechTranscript] = useState('');
   const [speechInterim, setSpeechInterim] = useState('');
   const [speechError, setSpeechError] = useState('');
@@ -313,8 +294,7 @@ export default function App() {
     return {
       mastered: Math.round((globalCounts.mastered / allWordsCount) * 100),
       reviewing: Math.round((globalCounts.reviewing / allWordsCount) * 100),
-      learning: Math.round((globalCounts.learning / allWordsCount) * 100),
-    };
+      learning: Math.round((globalCounts.learning / allWordsCount) * 100) };
   }, [allWordsCount, globalCounts]);
 
   // Search Logic
@@ -389,8 +369,7 @@ export default function App() {
         const nextSettings = {
           provider,
           model: String(parsed.model || DEFAULT_MODELS[provider]),
-          apiKey: savedCredentials?.password || '',
-        };
+          apiKey: savedCredentials?.password || '' };
         setAiSettings(nextSettings);
         setSettingsDraft(nextSettings);
       } catch {
@@ -404,8 +383,7 @@ export default function App() {
     Animated.timing(flipAnim, {
       toValue: showDetails ? 1 : 0,
       duration: 320,
-      useNativeDriver: true,
-    }).start();
+      useNativeDriver: true }).start();
   }, [flipAnim, showDetails]);
 
   useEffect(() => {
@@ -585,8 +563,7 @@ export default function App() {
                 console.warn('Failed resetting group progress.', err);
                 setError('Could not reset progress for this group.');
               }
-            },
-          },
+            } },
         ]
       );
     },
@@ -620,8 +597,7 @@ export default function App() {
               console.warn('Failed resetting all progress.', err);
               setError('Could not reset all progress.');
             }
-          },
-        },
+          } },
       ]
     );
   }, [groups, refreshGlobalStatuses, resetSelectedDeckState]);
@@ -693,8 +669,7 @@ export default function App() {
       Animated.timing(pan, {
         toValue,
         duration: 180,
-        useNativeDriver: true,
-      }).start(async () => {
+        useNativeDriver: true }).start(async () => {
         await classifyWord(state);
         pan.setValue({ x: 0, y: 0 });
         swipeBusyRef.current = false;
@@ -707,8 +682,7 @@ export default function App() {
     Animated.spring(pan, {
       toValue: { x: 0, y: 0 },
       useNativeDriver: true,
-      friction: 6,
-    }).start();
+      friction: 6 }).start();
   }, [pan]);
 
   const saveAiSettings = useCallback(async () => {
@@ -717,12 +691,10 @@ export default function App() {
     const nextSettings = {
       provider,
       model: settingsDraft.model.trim() || DEFAULT_MODELS[provider],
-      apiKey: settingsDraft.apiKey.trim(),
-    };
+      apiKey: settingsDraft.apiKey.trim() };
     try {
-      await Keychain.setGenericPassword('gre-user', nextSettings.apiKey, {
-        service: AI_KEYCHAIN_SERVICE,
-      });
+      await Keychain.setGenericPassword('ai-api-key', nextSettings.apiKey, {
+        service: AI_KEYCHAIN_SERVICE });
       await AsyncStorage.setItem(
         STORAGE_KEYS.aiSettings,
         JSON.stringify({ provider: nextSettings.provider, model: nextSettings.model })
@@ -800,14 +772,12 @@ Return JSON only:
         result = await evaluateWithGemini({
           apiKey: aiSettings.apiKey.trim(),
           model: aiSettings.model.trim(),
-          prompt,
-        });
+          prompt });
       } else {
         result = await evaluateWithOpenAI({
           apiKey: aiSettings.apiKey.trim(),
           model: aiSettings.model.trim(),
-          prompt,
-        });
+          prompt });
       }
       if (!result) {
         throw new Error('AI returned an unreadable response.');
@@ -828,8 +798,7 @@ Return JSON only:
           studyMode === STUDY_MODES.flashcard &&
           (Math.abs(gestureState.dx) > 8 || Math.abs(gestureState.dy) > 8),
         onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-          useNativeDriver: false,
-        }),
+          useNativeDriver: false }),
         onPanResponderRelease: (_, gestureState) => {
           const { dx, dy } = gestureState;
           const absDx = Math.abs(dx);
@@ -848,14 +817,26 @@ Return JSON only:
             return;
           }
           resetSwipePosition();
-        },
-      }),
+        } }),
     [classifyBySwipe, pan.x, pan.y, resetSwipePosition, studyMode]
   );
 
   const selectMode = useCallback(
-    (mode) => {
+    async (mode) => {
       if (mode === STUDY_MODES.quiz && !canPlayQuiz) return;
+      if (mode === STUDY_MODES.speaking && Platform.OS === 'android') {
+        const hasPermission = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+        );
+        if (!hasPermission) {
+          const permission = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+          );
+          if (permission !== PermissionsAndroid.RESULTS.GRANTED) {
+            setSpeechError('Microphone permission is required for speaking mode.');
+          }
+        }
+      }
       setStudyMode(mode);
       setShowDetails(false);
       flipAnim.setValue(0);
@@ -908,8 +889,7 @@ Return JSON only:
           setQuizSummary({
             correct: nextCorrect,
             total: nextTotal,
-            accuracy: Math.round((nextCorrect / nextTotal) * 100),
-          });
+            accuracy: Math.round((nextCorrect / nextTotal) * 100) });
           return;
         }
         nextQuizWord();
@@ -922,17 +902,14 @@ Return JSON only:
 
   const frontInterpolate = flipAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
+    outputRange: ['0deg', '180deg'] });
   const backInterpolate = flipAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['180deg', '360deg'],
-  });
+    outputRange: ['180deg', '360deg'] });
   const swipeRotate = pan.x.interpolate({
     inputRange: [-200, 0, 200],
     outputRange: ['-8deg', '0deg', '8deg'],
-    extrapolate: 'clamp',
-  });
+    extrapolate: 'clamp' });
 
   if (loading) {
     return (
@@ -996,8 +973,7 @@ Return JSON only:
                       styles.compactProgressSegment,
                       {
                         backgroundColor: STATE_COLORS[stateKey],
-                        flex: counts[stateKey] || MIN_PROGRESS_FLEX,
-                      },
+                        flex: counts[stateKey] || MIN_PROGRESS_FLEX },
                     ]}
                   />
                 ))}
@@ -1045,8 +1021,7 @@ Return JSON only:
                             { translateX: pan.x },
                             { translateY: pan.y },
                             { rotate: swipeRotate },
-                          ],
-                        },
+                          ] },
                       ]}
                       {...panResponder.panHandlers}
                     >
@@ -1059,8 +1034,7 @@ Return JSON only:
                             styles.card,
                             styles.cardFace,
                             {
-                              transform: [{ perspective: 1000 }, { rotateY: frontInterpolate }],
-                            },
+                              transform: [{ perspective: 1000 }, { rotateY: frontInterpolate }] },
                           ]}
                         >
                           <View style={styles.cardTopRow}>
@@ -1070,8 +1044,7 @@ Return JSON only:
                                 styles.cardTag,
                                 {
                                   backgroundColor:
-                                    STATE_COLORS[statuses[currentWord.word]] || '#212121',
-                                },
+                                    STATE_COLORS[statuses[currentWord.word]] || '#212121' },
                               ]}
                             >
                               <Text style={styles.cardTagText}>
@@ -1092,8 +1065,7 @@ Return JSON only:
                             styles.cardFace,
                             styles.cardBack,
                             {
-                              transform: [{ perspective: 1000 }, { rotateY: backInterpolate }],
-                            },
+                              transform: [{ perspective: 1000 }, { rotateY: backInterpolate }] },
                           ]}
                         >
                           <View style={styles.cardTopRow}>
@@ -1103,8 +1075,7 @@ Return JSON only:
                                 styles.cardTag,
                                 {
                                   backgroundColor:
-                                    STATE_COLORS[statuses[currentWord.word]] || '#212121',
-                                },
+                                    STATE_COLORS[statuses[currentWord.word]] || '#212121' },
                               ]}
                             >
                               <Text style={styles.cardTagText}>
@@ -1318,8 +1289,7 @@ Return JSON only:
                     model:
                       prev.provider === AI_PROVIDERS.gemini
                         ? prev.model
-                        : DEFAULT_MODELS[AI_PROVIDERS.gemini],
-                  }))
+                        : DEFAULT_MODELS[AI_PROVIDERS.gemini] }))
                 }
               >
                 <Text style={styles.settingsProviderButtonText}>Gemini</Text>
@@ -1336,8 +1306,7 @@ Return JSON only:
                     model:
                       prev.provider === AI_PROVIDERS.openai
                         ? prev.model
-                        : DEFAULT_MODELS[AI_PROVIDERS.openai],
-                  }))
+                        : DEFAULT_MODELS[AI_PROVIDERS.openai] }))
                 }
               >
                 <Text style={styles.settingsProviderButtonText}>ChatGPT</Text>
@@ -1401,8 +1370,7 @@ Return JSON only:
                     styles.compactProgressSegment,
                     {
                       backgroundColor: STATE_COLORS.mastered,
-                      flex: globalCounts.mastered || DASHBOARD_MIN_SEGMENT_FLEX,
-                    },
+                      flex: globalCounts.mastered || DASHBOARD_MIN_SEGMENT_FLEX },
                   ]}
                 />
                 <View
@@ -1410,8 +1378,7 @@ Return JSON only:
                     styles.compactProgressSegment,
                     {
                       backgroundColor: STATE_COLORS.reviewing,
-                      flex: globalCounts.reviewing || DASHBOARD_MIN_SEGMENT_FLEX,
-                    },
+                      flex: globalCounts.reviewing || DASHBOARD_MIN_SEGMENT_FLEX },
                   ]}
                 />
                 <View
@@ -1419,8 +1386,7 @@ Return JSON only:
                     styles.compactProgressSegment,
                     {
                       backgroundColor: STATE_COLORS.learning,
-                      flex: globalCounts.learning || DASHBOARD_MIN_SEGMENT_FLEX,
-                    },
+                      flex: globalCounts.learning || DASHBOARD_MIN_SEGMENT_FLEX },
                   ]}
                 />
                 <View
@@ -1428,8 +1394,7 @@ Return JSON only:
                     styles.compactProgressSegment,
                     {
                       backgroundColor: '#333',
-                      flex: globalUnseenCount || 1,
-                    },
+                      flex: globalUnseenCount || 1 },
                   ]}
                 />
               </View>
@@ -1536,42 +1501,42 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, paddingBottom: 8 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   appHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  appTitle: { color: '#fff', fontSize: 28, fontFamily: 'Poppins_700Bold' },
+  appTitle: { color: '#fff', fontSize: 28 },
   settingsTopButton: { borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#111' },
-  settingsTopButtonText: { color: '#fff', fontSize: 12, fontFamily: 'Poppins_500Medium' },
-  sectionTitle: { color: '#fff', fontSize: 18, marginBottom: 12, fontFamily: 'Poppins_600SemiBold' },
+  settingsTopButtonText: { color: '#fff', fontSize: 12 },
+  sectionTitle: { color: '#fff', fontSize: 18, marginBottom: 12 },
 
   // Dashboard & Search
   dashboard: { backgroundColor: '#151515', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#252525' },
-  dashboardTitle: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
-  dashboardStats: { color: '#bbb', fontSize: 13, fontFamily: 'Poppins_400Regular', marginBottom: 12 },
+  dashboardTitle: { color: '#fff', fontSize: 16 },
+  dashboardStats: { color: '#bbb', fontSize: 13, marginBottom: 12 },
   ringsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   ringItem: { alignItems: 'center', gap: 6 },
   progressRing: { width: 66, height: 66, borderRadius: 33, borderWidth: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#111' },
-  progressRingValue: { color: '#fff', fontSize: 14, fontFamily: 'Poppins_700Bold' },
-  ringLabel: { color: '#aaa', fontSize: 11, fontFamily: 'Poppins_500Medium' },
+  progressRingValue: { color: '#fff', fontSize: 14 },
+  ringLabel: { color: '#aaa', fontSize: 11 },
   searchWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#2f3240', backgroundColor: '#131722', marginBottom: 16, paddingHorizontal: 12 },
   searchIcon: { color: '#7f8aa3', fontSize: 15, marginRight: 8 },
-  searchInput: { flex: 1, color: '#fff', paddingVertical: 14, fontSize: 15, fontFamily: 'Poppins_400Regular' },
+  searchInput: { flex: 1, color: '#fff', paddingVertical: 14, fontSize: 15 },
   searchResultItem: { backgroundColor: '#111', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#252525' },
-  searchWord: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
-  searchDef: { color: '#aaa', fontSize: 13, fontFamily: 'Poppins_400Regular', marginTop: 4 },
+  searchWord: { color: '#fff', fontSize: 16 },
+  searchDef: { color: '#aaa', fontSize: 13, marginTop: 4 },
 
   // Decks
   deckListWrap: { flex: 1 },
   deckListContent: { paddingBottom: 20 },
   deckButton: { borderWidth: 1, borderColor: '#252525', borderRadius: 16, marginBottom: 12, backgroundColor: '#111', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   deckMainArea: { flex: 1, padding: 18 },
-  deckTitle: { color: '#fff', fontSize: 17, fontFamily: 'Poppins_600SemiBold' },
-  deckMeta: { color: '#888', marginTop: 4, fontFamily: 'Poppins_400Regular' },
+  deckTitle: { color: '#fff', fontSize: 17 },
+  deckMeta: { color: '#888', marginTop: 4 },
   resetGroupButton: { marginRight: 14, borderWidth: 1, borderColor: '#444', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#171717' },
-  resetGroupButtonText: { color: '#ddd', fontSize: 12, fontFamily: 'Poppins_500Medium' },
+  resetGroupButtonText: { color: '#ddd', fontSize: 12 },
 
   // Header
   deckScreen: { flex: 1 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  backText: { color: '#fff', fontSize: 14, fontFamily: 'Poppins_500Medium' },
-  groupTitle: { color: '#fff', fontSize: 16, fontFamily: 'Poppins_600SemiBold' },
+  backText: { color: '#fff', fontSize: 14 },
+  groupTitle: { color: '#fff', fontSize: 16 },
 
   // Flashcards UI
   cardFlipContainer: { flex: 1, minHeight: CARD_MIN_HEIGHT },
@@ -1583,21 +1548,21 @@ const styles = StyleSheet.create({
   audioIcon: { backgroundColor: '#222', borderRadius: 20, padding: 8 },
   audioIconText: { fontSize: 18 },
   cardTag: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  cardTagText: { color: '#fff', fontSize: 11, textTransform: 'uppercase', fontFamily: 'Poppins_700Bold' },
-  wordText: { color: '#fff', fontSize: 36, textAlign: 'center', fontFamily: 'Poppins_700Bold' },
-  tapHint: { textAlign: 'center', color: '#666', fontSize: 14, marginTop: 16, fontFamily: 'Poppins_400Regular' },
-  swipeHint: { textAlign: 'center', color: '#777', fontSize: 12, marginTop: 10, fontFamily: 'Poppins_500Medium' },
+  cardTagText: { color: '#fff', fontSize: 11, textTransform: 'uppercase' },
+  wordText: { color: '#fff', fontSize: 36, textAlign: 'center' },
+  tapHint: { textAlign: 'center', color: '#666', fontSize: 14, marginTop: 16 },
+  swipeHint: { textAlign: 'center', color: '#777', fontSize: 12, marginTop: 10 },
 
   // Card Details (Typography improvements)
   detailsScroll: { marginTop: 14, flex: 1 },
   detailsWrap: { gap: 12, paddingBottom: 8 },
-  definitionText: { color: '#fff', fontSize: 18, lineHeight: 26, fontFamily: 'Poppins_600SemiBold', textAlign: 'center' },
-  posText: { color: '#888', fontStyle: 'italic', fontFamily: 'Poppins_400Regular' },
-  exampleText: { color: '#ddd', fontSize: 15, fontStyle: 'italic', textAlign: 'center', fontFamily: 'Poppins_400Regular' },
+  definitionText: { color: '#fff', fontSize: 18, lineHeight: 26, textAlign: 'center' },
+  posText: { color: '#888', fontStyle: 'italic' },
+  exampleText: { color: '#ddd', fontSize: 15, fontStyle: 'italic', textAlign: 'center' },
   mnemonicBox: { backgroundColor: '#1a1a1a', padding: 12, borderRadius: 12, marginTop: 8 },
-  mnemonicTitle: { color: '#FF9800', fontSize: 12, textTransform: 'uppercase', fontFamily: 'Poppins_700Bold', marginBottom: 4 },
-  mnemonicText: { color: '#eee', fontSize: 14, lineHeight: 20, fontFamily: 'Poppins_500Medium' },
-  synonymsText: { color: '#aaa', fontSize: 13, textAlign: 'center', marginTop: 8, fontFamily: 'Poppins_400Regular' },
+  mnemonicTitle: { color: '#FF9800', fontSize: 12, textTransform: 'uppercase', marginBottom: 4 },
+  mnemonicText: { color: '#eee', fontSize: 14, lineHeight: 20 },
+  synonymsText: { color: '#aaa', fontSize: 13, textAlign: 'center', marginTop: 8 },
 
   // Progress UI
   compactProgressArea: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 16, backgroundColor: '#333' },
@@ -1605,66 +1570,65 @@ const styles = StyleSheet.create({
   dashboardSegmentLegend: { marginTop: -4, marginBottom: 12, gap: 6 },
   dashboardSegmentItem: { flexDirection: 'row', alignItems: 'center' },
   dashboardSegmentDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  dashboardSegmentText: { color: '#9ea5b5', fontSize: 12, fontFamily: 'Poppins_500Medium' },
+  dashboardSegmentText: { color: '#9ea5b5', fontSize: 12 },
   resetAllButton: { alignSelf: 'flex-end', borderWidth: 1, borderColor: '#444', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#111' },
-  resetAllButtonText: { color: '#ddd', fontSize: 12, fontFamily: 'Poppins_500Medium' },
+  resetAllButtonText: { color: '#ddd', fontSize: 12 },
 
   // Action Buttons
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 24 },
   actionButton: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', borderWidth: 1, backgroundColor: '#111' },
-  actionText: { fontFamily: 'Poppins_600SemiBold', fontSize: 14 },
+  actionText: { fontSize: 14 },
 
   // Modes & Quiz
   modeList: { gap: 12 },
   modeCard: { borderWidth: 1, borderColor: '#252525', borderRadius: 16, padding: 18, backgroundColor: '#111' },
   modeCardDisabled: { opacity: 0.5 },
-  modeCardTitle: { color: '#fff', fontSize: 18, fontFamily: 'Poppins_600SemiBold' },
-  modeCardMeta: { marginTop: 4, color: '#888', fontSize: 13, fontFamily: 'Poppins_400Regular' },
+  modeCardTitle: { color: '#fff', fontSize: 18 },
+  modeCardMeta: { marginTop: 4, color: '#888', fontSize: 13 },
 
   quizWrap: { flex: 1, gap: 16 },
-  quizPrompt: { color: '#888', textAlign: 'center', fontFamily: 'Poppins_500Medium', marginBottom: -10 },
+  quizPrompt: { color: '#888', textAlign: 'center', marginBottom: -10 },
   quizOptionsWrap: { gap: 10 },
   quizOption: { borderWidth: 1, borderColor: '#252525', borderRadius: 14, padding: 16, backgroundColor: '#111' },
   quizOptionCorrect: { borderColor: '#4CAF50', backgroundColor: '#1B2E20' },
   quizOptionWrong: { borderColor: '#F44336', backgroundColor: '#301818' },
-  quizOptionText: { color: '#fff', fontSize: 15, fontFamily: 'Poppins_500Medium' },
+  quizOptionText: { color: '#fff', fontSize: 15 },
   quizFeedback: { borderWidth: 1, borderColor: '#252525', borderRadius: 12, padding: 16, backgroundColor: '#111', alignItems: 'center' },
-  quizFeedbackTitle: { color: '#F44336', fontSize: 16, fontFamily: 'Poppins_600SemiBold', marginBottom: 8 },
-  quizFeedbackText: { color: '#ddd', fontSize: 14, fontFamily: 'Poppins_400Regular', textAlign: 'center', marginBottom: 12 },
+  quizFeedbackTitle: { color: '#F44336', fontSize: 16, marginBottom: 8 },
+  quizFeedbackText: { color: '#ddd', fontSize: 14, textAlign: 'center', marginBottom: 12 },
   nextButton: { backgroundColor: '#333', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20 },
-  nextButtonText: { color: '#fff', fontFamily: 'Poppins_600SemiBold' },
+  nextButtonText: { color: '#fff' },
   speakingPanel: { borderWidth: 1, borderColor: '#252525', borderRadius: 12, padding: 14, backgroundColor: '#111', gap: 10 },
   speakingButton: { backgroundColor: '#2A2A2A' },
   speakingButtonActive: { backgroundColor: '#3B2A1A' },
   speakingCheckButton: { marginTop: 6, alignSelf: 'flex-start' },
-  speakingTranscriptLabel: { color: '#aaa', fontSize: 12, fontFamily: 'Poppins_500Medium' },
-  speakingTranscriptValue: { color: '#fff', fontSize: 14, fontFamily: 'Poppins_400Regular', minHeight: 42 },
-  speakingError: { color: '#F44336', fontSize: 13, fontFamily: 'Poppins_400Regular' },
+  speakingTranscriptLabel: { color: '#aaa', fontSize: 12 },
+  speakingTranscriptValue: { color: '#fff', fontSize: 14, minHeight: 42 },
+  speakingError: { color: '#F44336', fontSize: 13 },
   speechResultCard: { borderWidth: 1, borderColor: '#2e2e2e', borderRadius: 10, padding: 12, backgroundColor: '#171717' },
-  speechResultTitle: { fontSize: 16, marginBottom: 6, fontFamily: 'Poppins_600SemiBold' },
+  speechResultTitle: { fontSize: 16, marginBottom: 6 },
   speechResultGood: { color: '#4CAF50' },
   speechResultBad: { color: '#F44336' },
-  quizScoreText: { color: '#888', textAlign: 'center', fontFamily: 'Poppins_500Medium' },
-  infoText: { color: '#888', textAlign: 'center', fontFamily: 'Poppins_500Medium', marginTop: 20 },
+  quizScoreText: { color: '#888', textAlign: 'center' },
+  infoText: { color: '#888', textAlign: 'center', marginTop: 20 },
   settingsScreen: { borderWidth: 1, borderColor: '#252525', borderRadius: 16, backgroundColor: '#111', padding: 16, gap: 10 },
   settingsProviderRow: { flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 6 },
   settingsProviderButton: { flex: 1, borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   settingsProviderButtonActive: { borderColor: '#fff', backgroundColor: '#1d1d1d' },
-  settingsProviderButtonText: { color: '#fff', fontFamily: 'Poppins_500Medium' },
-  settingsLabel: { color: '#bbb', fontSize: 13, fontFamily: 'Poppins_500Medium' },
-  settingsInput: { borderWidth: 1, borderColor: '#2f2f2f', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: '#fff', fontFamily: 'Poppins_400Regular', backgroundColor: '#090909' },
-  settingsHint: { color: '#777', fontSize: 12, marginTop: 4, fontFamily: 'Poppins_400Regular' },
+  settingsProviderButtonText: { color: '#fff' },
+  settingsLabel: { color: '#bbb', fontSize: 13 },
+  settingsInput: { borderWidth: 1, borderColor: '#2f2f2f', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: '#fff', backgroundColor: '#090909' },
+  settingsHint: { color: '#777', fontSize: 12, marginTop: 4 },
 
   errorBox: { marginBottom: 12, borderWidth: 1, borderColor: '#301818', borderRadius: 12, padding: 12, backgroundColor: '#1A0B0B' },
-  errorText: { color: '#F44336', marginBottom: 8, fontFamily: 'Poppins_400Regular' },
+  errorText: { color: '#F44336', marginBottom: 8 },
   retryButton: { borderWidth: 1, borderColor: '#F44336', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, alignSelf: 'flex-start' },
-  retryText: { color: '#F44336', fontFamily: 'Poppins_500Medium' },
+  retryText: { color: '#F44336' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard: { width: '100%', maxWidth: 360, backgroundColor: '#111', borderRadius: 16, borderWidth: 1, borderColor: '#252525', padding: 18, gap: 12 },
-  modalTitle: { color: '#fff', fontSize: 20, fontFamily: 'Poppins_700Bold' },
-  modalBody: { color: '#ddd', fontSize: 14, lineHeight: 22, fontFamily: 'Poppins_400Regular' },
+  modalTitle: { color: '#fff', fontSize: 20 },
+  modalBody: { color: '#ddd', fontSize: 14, lineHeight: 22 },
   modalActions: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end' },
   modalButton: { backgroundColor: '#333', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16 },
   modalButtonSecondary: { backgroundColor: '#222' },
-  modalButtonText: { color: '#fff', fontFamily: 'Poppins_600SemiBold' },
-});
+  modalButtonText: { color: '#fff' } });
