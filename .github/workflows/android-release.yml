@@ -38,8 +38,25 @@ jobs:
             echo "Expected file not found: $VOICE_GRADLE"
             exit 1
           fi
-          # Replace legacy appcompat declaration (supports both variable and hardcoded versions).
-          sed -E -i "s|implementation \"com\\.android\\.support:appcompat-v7:[^\"]+\"|implementation \"androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}\"|g" "$VOICE_GRADLE"
+          # Replace legacy appcompat declaration (supports variable/hardcoded versions and quote styles).
+          python - "$VOICE_GRADLE" <<'PY'
+          import os
+          import pathlib
+          import re
+          import sys
+
+          gradle_file = pathlib.Path(sys.argv[1])
+          contents = gradle_file.read_text()
+          legacy_pattern = re.compile(r'implementation\s+[\'"]com\.android\.support:appcompat-v7:[^\'"]+[\'"]')
+          if not legacy_pattern.search(contents):
+              print(f"No legacy appcompat dependency found in {gradle_file}")
+              sys.exit(1)
+          patched = legacy_pattern.sub(
+              f'implementation "androidx.appcompat:appcompat:{os.environ["ANDROIDX_APPCOMPAT_VERSION"]}"',
+              contents,
+          )
+          gradle_file.write_text(patched)
+          PY
           if grep -q 'com.android.support:appcompat-v7' "$VOICE_GRADLE"; then
             echo "Failed to patch legacy appcompat dependency in $VOICE_GRADLE"
             exit 1
