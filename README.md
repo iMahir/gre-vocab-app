@@ -19,6 +19,7 @@ The app fetches words with the Fetch API from:
 - Progress bars per deck for all three learning states
 - Local progress persistence with AsyncStorage
 - AI settings page to configure provider (`Gemini` or `ChatGPT`), model name, and API key
+- API key stored securely via native keychain/keystore
 - Black-and-white UI with improved mode and settings flows
 
 ## Run locally

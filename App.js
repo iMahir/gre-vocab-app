@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Voice from '@react-native-voice/voice';
+import * as Keychain from 'react-native-keychain';
 
 const DATA_URL =
   'https://raw.githubusercontent.com/iMahir/gre-vocab-app/refs/heads/main/GRE_Words.json';
@@ -57,6 +58,7 @@ const DEFAULT_MODELS = {
   [AI_PROVIDERS.gemini]: 'gemini-2.0-flash',
   [AI_PROVIDERS.openai]: 'gpt-4o-mini',
 };
+const AI_KEYCHAIN_SERVICE = 'gre/ai-api-key';
 
 const STORAGE_KEYS = {
   statuses: (groupName) => `gre/statuses/${groupName}`,
@@ -110,7 +112,9 @@ function extractJsonObject(value) {
 
 function sanitizePromptInput(value) {
   return String(value || '')
-    .replace(/[{}[\]<>`]/g, ' ')
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[{}[\]<>`"'\\]/g, ' ')
+    .replace(/[:;]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 400);
@@ -136,10 +140,13 @@ async function evaluateWithGemini({ apiKey, model, prompt }) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
       model
-    )}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    )}:generateContent`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
@@ -370,7 +377,10 @@ export default function App() {
   useEffect(() => {
     const hydrateSettings = async () => {
       try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEYS.aiSettings);
+        const [saved, savedCredentials] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.aiSettings),
+          Keychain.getGenericPassword({ service: AI_KEYCHAIN_SERVICE }),
+        ]);
         if (!saved) return;
         const parsed = JSON.parse(saved);
         if (!parsed || typeof parsed !== 'object') return;
@@ -379,7 +389,7 @@ export default function App() {
         const nextSettings = {
           provider,
           model: String(parsed.model || DEFAULT_MODELS[provider]),
-          apiKey: String(parsed.apiKey || ''),
+          apiKey: savedCredentials?.password || '',
         };
         setAiSettings(nextSettings);
         setSettingsDraft(nextSettings);
@@ -403,7 +413,11 @@ export default function App() {
       if (autoAdvanceRef.current !== null) {
         clearTimeout(autoAdvanceRef.current);
       }
-      Voice.destroy().then(Voice.removeAllListeners).catch(() => null);
+      Voice.destroy()
+        .then(Voice.removeAllListeners)
+        .catch((err) => {
+          if (__DEV__) console.warn('Voice cleanup failed', err);
+        });
     };
   }, []);
 
@@ -422,7 +436,9 @@ export default function App() {
     setSpeechError('');
     setSpeechEvaluation(null);
     setIsListening(false);
-    Voice.cancel().catch(() => null);
+    Voice.cancel().catch((err) => {
+      if (__DEV__) console.warn('Voice cancel failed', err);
+    });
   }, []);
 
   useEffect(() => {
@@ -449,7 +465,11 @@ export default function App() {
     };
 
     return () => {
-      Voice.destroy().then(Voice.removeAllListeners).catch(() => null);
+      Voice.destroy()
+        .then(Voice.removeAllListeners)
+        .catch((err) => {
+          if (__DEV__) console.warn('Voice cleanup failed', err);
+        });
     };
   }, []);
 
@@ -700,7 +720,13 @@ export default function App() {
       apiKey: settingsDraft.apiKey.trim(),
     };
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.aiSettings, JSON.stringify(nextSettings));
+      await Keychain.setGenericPassword('gre-user', nextSettings.apiKey, {
+        service: AI_KEYCHAIN_SERVICE,
+      });
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.aiSettings,
+        JSON.stringify({ provider: nextSettings.provider, model: nextSettings.model })
+      );
       setAiSettings(nextSettings);
       setSettingsDraft(nextSettings);
       setError('');
@@ -752,9 +778,11 @@ export default function App() {
       return;
     }
 
+    const safeWord = sanitizePromptInput(currentWord.word);
+    const safeDefinition = sanitizePromptInput(currentWord.definition);
     const prompt = `Evaluate whether the user's meaning for a GRE word is roughly correct.
-Word: ${currentWord.word}
-Correct meaning: ${currentWord.definition}
+Word: ${safeWord}
+Correct meaning: ${safeDefinition}
 User spoken meaning: ${spokenAnswer}
 
 Return JSON only:
