@@ -53,6 +53,7 @@ const DEFAULT_MODELS = {
   [AI_PROVIDERS.gemini]: 'gemini-2.0-flash',
   [AI_PROVIDERS.openai]: 'gpt-4o-mini' };
 const AI_KEYCHAIN_SERVICE = 'gre/ai-api-key';
+const AI_KEYCHAIN_ACCOUNT = 'gre-ai-api-key';
 
 const STORAGE_KEYS = {
   statuses: (groupName) => `gre/statuses/${groupName}`,
@@ -693,7 +694,7 @@ export default function App() {
       model: settingsDraft.model.trim() || DEFAULT_MODELS[provider],
       apiKey: settingsDraft.apiKey.trim() };
     try {
-      await Keychain.setGenericPassword('ai-api-key', nextSettings.apiKey, {
+      await Keychain.setGenericPassword(AI_KEYCHAIN_ACCOUNT, nextSettings.apiKey, {
         service: AI_KEYCHAIN_SERVICE });
       await AsyncStorage.setItem(
         STORAGE_KEYS.aiSettings,
@@ -708,17 +709,25 @@ export default function App() {
     }
   }, [settingsDraft]);
 
+  const ensureMicrophonePermission = useCallback(async () => {
+    if (Platform.OS !== 'android') return true;
+    const hasPermission = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+    );
+    if (hasPermission) return true;
+    const permission = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+    );
+    return permission === PermissionsAndroid.RESULTS.GRANTED;
+  }, []);
+
   const startListening = useCallback(async () => {
     if (!currentWord) return;
     try {
-      if (Platform.OS === 'android') {
-        const permission = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
-        );
-        if (permission !== PermissionsAndroid.RESULTS.GRANTED) {
-          setSpeechError('Microphone permission is required.');
-          return;
-        }
+      const hasMicrophonePermission = await ensureMicrophonePermission();
+      if (!hasMicrophonePermission) {
+        setSpeechError('Microphone permission is required.');
+        return;
       }
       setSpeechTranscript('');
       setSpeechInterim('');
@@ -728,7 +737,7 @@ export default function App() {
     } catch (err) {
       setSpeechError(err?.message || 'Could not start voice recognition.');
     }
-  }, [currentWord]);
+  }, [currentWord, ensureMicrophonePermission]);
 
   const stopListening = useCallback(async () => {
     try {
@@ -745,8 +754,12 @@ export default function App() {
       setSpeechError('Please speak your meaning first.');
       return;
     }
-    if (!aiSettings.apiKey.trim() || !aiSettings.model.trim()) {
-      setSpeechError('Open Settings and save your AI provider, model, and API key first.');
+    if (!aiSettings.model.trim()) {
+      setSpeechError('Model name is required. Open Settings and save it first.');
+      return;
+    }
+    if (!aiSettings.apiKey.trim()) {
+      setSpeechError('API key is required. Open Settings and save it first.');
       return;
     }
 
@@ -825,16 +838,9 @@ Return JSON only:
     async (mode) => {
       if (mode === STUDY_MODES.quiz && !canPlayQuiz) return;
       if (mode === STUDY_MODES.speaking && Platform.OS === 'android') {
-        const hasPermission = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
-        );
+        const hasPermission = await ensureMicrophonePermission();
         if (!hasPermission) {
-          const permission = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
-          );
-          if (permission !== PermissionsAndroid.RESULTS.GRANTED) {
-            setSpeechError('Microphone permission is required for speaking mode.');
-          }
+          setSpeechError('Microphone permission is required for speaking mode.');
         }
       }
       setStudyMode(mode);
@@ -844,7 +850,7 @@ Return JSON only:
       resetQuizState();
       resetSpeakingState();
     },
-    [canPlayQuiz, flipAnim, pan, resetQuizState, resetSpeakingState]
+    [canPlayQuiz, ensureMicrophonePermission, flipAnim, pan, resetQuizState, resetSpeakingState]
   );
 
   const backToModes = useCallback(() => {
