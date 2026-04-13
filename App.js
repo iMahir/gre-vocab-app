@@ -53,6 +53,10 @@ const STORAGE_KEYS = {
   statuses: (groupName) => `gre/statuses/${groupName}`,
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
 };
+const STORAGE_PREFIXES = {
+  statuses: 'gre/statuses/',
+  cardIndex: 'gre/card-index/',
+};
 
 // Minimum flex value so a zero-count segment stays visible as a sliver
 const MIN_PROGRESS_FLEX = 0.01;
@@ -61,6 +65,7 @@ const SWIPE_THRESHOLD = 90;
 const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
 const INCORRECT_ANSWER_VIBRATION_MS = 120;
 const CARD_MIN_HEIGHT = 300;
+const ANDROID_STATUS_BAR_MARGIN = 10;
 
 function shuffleArray(values) {
   const next = [...values];
@@ -115,7 +120,10 @@ export default function App() {
     selectedGroupIndex === null ? null : groups[selectedGroupIndex] ?? null;
   const words = selectedGroup?.words ?? [];
   const totalWords = words.length;
-  const topInsetPadding = Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 0) + 10 : 12;
+  const topPadding =
+    Platform.OS === 'android'
+      ? (RNStatusBar.currentHeight ?? 0) + ANDROID_STATUS_BAR_MARGIN
+      : 12;
 
   const uniqueDefinitionCount = useMemo(
     () =>
@@ -206,8 +214,9 @@ export default function App() {
         if (parsed && typeof parsed === 'object') {
           allStatuses = { ...allStatuses, ...parsed };
         }
-      } catch {
-        // Ignore corrupted saved statuses for one group
+      } catch (err) {
+        // Ignore corrupted saved statuses for one group.
+        console.warn('Ignoring corrupted saved group status data for group:', group.group, err);
       }
     }
     setGlobalStatuses(allStatuses);
@@ -393,7 +402,8 @@ export default function App() {
                 }
                 await refreshGlobalStatuses(groups);
                 setError('');
-              } catch {
+              } catch (err) {
+                console.warn('Failed resetting group progress.', err);
                 setError('Could not reset progress for this group.');
               }
             },
@@ -418,7 +428,8 @@ export default function App() {
               const allStorageKeys = await AsyncStorage.getAllKeys();
               const progressKeys = allStorageKeys.filter(
                 (key) =>
-                  key.startsWith('gre/statuses/') || key.startsWith('gre/card-index/')
+                  key.startsWith(STORAGE_PREFIXES.statuses) ||
+                  key.startsWith(STORAGE_PREFIXES.cardIndex)
               );
               if (progressKeys.length) {
                 await AsyncStorage.multiRemove(progressKeys);
@@ -426,7 +437,8 @@ export default function App() {
               resetSelectedDeckState();
               await refreshGlobalStatuses(groups);
               setError('');
-            } catch {
+            } catch (err) {
+              console.warn('Failed resetting all progress.', err);
               setError('Could not reset all progress.');
             }
           },
@@ -682,7 +694,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.base}>
       <ExpoStatusBar style="light" />
-      <View style={[styles.container, { paddingTop: topInsetPadding }]}>
+      <View style={[styles.container, { paddingTop: topPadding }]}>
         <Text style={styles.appTitle}>GRE Vocab</Text>
 
         {error ? (
