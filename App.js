@@ -66,6 +66,7 @@ const SWIPE_THRESHOLD = 90;
 const QUIZ_AUTO_ADVANCE_DELAY_MS = 1200;
 const INCORRECT_ANSWER_VIBRATION_MS = 120;
 const CARD_MIN_HEIGHT = 300;
+const CARD_BACK_TOP_PADDING = 72;
 // Extra top spacing to keep content clear of Android status icons.
 const ANDROID_STATUS_BAR_MARGIN = 10;
 const DASHBOARD_MIN_SEGMENT_FLEX = 1;
@@ -1173,7 +1174,7 @@ const styles = StyleSheet.create({
   cardTapLayer: { flex: 1, minHeight: CARD_MIN_HEIGHT },
   card: { backgroundColor: '#111', borderRadius: 20, padding: 20, minHeight: CARD_MIN_HEIGHT, borderWidth: 1, borderColor: '#252525', justifyContent: 'center', overflow: 'hidden' },
   cardFace: { backfaceVisibility: 'hidden' },
-  cardBack: { position: 'absolute', width: '100%', top: 0, left: 0, justifyContent: 'flex-start', paddingTop: 72, paddingBottom: 12 },
+  cardBack: { position: 'absolute', width: '100%', top: 0, left: 0, justifyContent: 'flex-start', paddingTop: CARD_BACK_TOP_PADDING, paddingBottom: 12 },
   cardTopRow: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   audioIcon: { backgroundColor: '#222', borderRadius: 20, padding: 8 },
   audioIconText: { fontSize: 18 },
