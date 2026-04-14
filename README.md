@@ -35,6 +35,12 @@ To run on Android:
 npm run android
 ```
 
+Notes:
+
+- This repo intentionally does not commit `android/` and `ios/` (they are generated when needed).
+- `npm run android` now auto-generates `android/` if missing.
+- The speech recognition dependency `@react-native-voice/voice` ships with a legacy Android support-library dependency; it is automatically patched to AndroidX via `patch-package` during `npm install`.
+
 To run on iOS:
 
 ```bash

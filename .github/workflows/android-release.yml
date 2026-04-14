@@ -56,8 +56,8 @@ jobs:
           contents = gradle_file.read_text()
           legacy_pattern = re.compile(r'implementation\s+[\'"]com\.android\.support:appcompat-v7:[^\'"]+[\'"]')
           if not legacy_pattern.search(contents):
-              print(f"No legacy appcompat dependency found in {gradle_file}")
-              sys.exit(1)
+              print(f"No legacy appcompat dependency found in {gradle_file} (already patched)")
+              sys.exit(0)
           patched = legacy_pattern.sub(
               f'implementation "androidx.appcompat:appcompat:{os.environ["ANDROIDX_APPCOMPAT_VERSION"]}"',
               contents,

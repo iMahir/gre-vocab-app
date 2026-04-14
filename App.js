@@ -113,6 +113,18 @@ function sanitizePromptInput(value) {
     .slice(0, 400);
 }
 
+function getErrorMessage(err, fallback) {
+  if (!err) return fallback;
+  if (err instanceof Error && err.message) return err.message;
+  const message = err?.message || err?.error?.message;
+  if (typeof message === 'string' && message.trim()) return message;
+  try {
+    return String(err);
+  } catch {
+    return fallback;
+  }
+}
+
 function normalizeSpeechEvaluation(result) {
   if (!result || typeof result !== 'object' || typeof result.feedback !== 'string') {
     throw new Error('AI returned malformed evaluation data.');
@@ -128,7 +140,7 @@ function normalizeSpeechEvaluation(result) {
     feedback: result.feedback.trim() || 'No feedback available.' };
 }
 
-async function evaluateWithGemini({ apiKey, model, prompt }) {
+async function evaluateWithGemini({ apiKey, model, prompt, signal }) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
       model
@@ -138,6 +150,7 @@ async function evaluateWithGemini({ apiKey, model, prompt }) {
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey },
+      signal,
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
@@ -156,12 +169,13 @@ async function evaluateWithGemini({ apiKey, model, prompt }) {
   return extractJsonObject(rawText);
 }
 
-async function evaluateWithOpenAI({ apiKey, model, prompt }) {
+async function evaluateWithOpenAI({ apiKey, model, prompt, signal }) {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}` },
+    signal,
     body: JSON.stringify({
       model,
       temperature: 0.1,
@@ -218,6 +232,8 @@ export default function App() {
 
   const autoAdvanceRef = useRef(null);
   const swipeBusyRef = useRef(false);
+  const speechEvalAbortRef = useRef(null);
+  const speechEvalRequestIdRef = useRef(0);
   const flipAnim = useRef(new Animated.Value(0)).current;
   const pan = useRef(new Animated.ValueXY()).current;
 
@@ -392,11 +408,6 @@ export default function App() {
       if (autoAdvanceRef.current !== null) {
         clearTimeout(autoAdvanceRef.current);
       }
-      Voice.destroy()
-        .then(Voice.removeAllListeners)
-        .catch((err) => {
-          if (__DEV__) console.warn('Voice cleanup failed', err);
-        });
     };
   }, []);
 
@@ -410,10 +421,16 @@ export default function App() {
   }, []);
 
   const resetSpeakingState = useCallback(() => {
+    speechEvalRequestIdRef.current += 1;
+    if (speechEvalAbortRef.current) {
+      speechEvalAbortRef.current.abort();
+      speechEvalAbortRef.current = null;
+    }
     setSpeechTranscript('');
     setSpeechInterim('');
     setSpeechError('');
     setSpeechEvaluation(null);
+    setIsEvaluatingSpeech(false);
     setIsListening(false);
     Voice.cancel().catch((err) => {
       if (__DEV__) console.warn('Voice cancel failed', err);
@@ -430,7 +447,8 @@ export default function App() {
     };
     Voice.onSpeechError = (event) => {
       setIsListening(false);
-      const message = event?.error?.message || event?.error || 'Speech recognition failed.';
+      const message =
+        event?.error?.message || event?.error?.code || 'Speech recognition failed.';
       setSpeechError(String(message));
     };
     Voice.onSpeechPartialResults = (event) => {
@@ -444,8 +462,14 @@ export default function App() {
     };
 
     return () => {
+      speechEvalRequestIdRef.current += 1;
+      if (speechEvalAbortRef.current) {
+        speechEvalAbortRef.current.abort();
+        speechEvalAbortRef.current = null;
+      }
+      Voice.cancel().catch(() => {});
       Voice.destroy()
-        .then(Voice.removeAllListeners)
+        .then(() => Voice.removeAllListeners())
         .catch((err) => {
           if (__DEV__) console.warn('Voice cleanup failed', err);
         });
@@ -711,14 +735,24 @@ export default function App() {
 
   const ensureMicrophonePermission = useCallback(async () => {
     if (Platform.OS !== 'android') return true;
-    const hasPermission = await PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
-    );
-    if (hasPermission) return true;
-    const permission = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
-    );
-    return permission === PermissionsAndroid.RESULTS.GRANTED;
+    try {
+      const hasPermission = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+      );
+      if (hasPermission) return true;
+      const permission = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        {
+          title: 'Microphone permission',
+          message: 'We need microphone access to transcribe your spoken meaning.',
+          buttonPositive: 'Allow',
+          buttonNegative: 'Deny',
+        }
+      );
+      return permission === PermissionsAndroid.RESULTS.GRANTED;
+    } catch {
+      return false;
+    }
   }, []);
 
   const startListening = useCallback(async () => {
@@ -729,13 +763,26 @@ export default function App() {
         setSpeechError('Microphone permission is required.');
         return;
       }
+      const isAvailable = await Voice.isAvailable().catch(() => 0);
+      if (!isAvailable) {
+        setSpeechError('Speech recognition is unavailable on this device.');
+        return;
+      }
+
+      if (speechEvalAbortRef.current) {
+        speechEvalAbortRef.current.abort();
+        speechEvalAbortRef.current = null;
+      }
+      speechEvalRequestIdRef.current += 1;
+      setIsEvaluatingSpeech(false);
+      await Voice.cancel().catch(() => {});
       setSpeechTranscript('');
       setSpeechInterim('');
       setSpeechError('');
       setSpeechEvaluation(null);
       await Voice.start('en-US');
     } catch (err) {
-      setSpeechError(err?.message || 'Could not start voice recognition.');
+      setSpeechError(getErrorMessage(err, 'Could not start voice recognition.'));
     }
   }, [currentWord, ensureMicrophonePermission]);
 
@@ -780,27 +827,52 @@ Return JSON only:
     try {
       setIsEvaluatingSpeech(true);
       setSpeechError('');
+
+      const requestId = speechEvalRequestIdRef.current + 1;
+      speechEvalRequestIdRef.current = requestId;
+
+      if (speechEvalAbortRef.current) {
+        speechEvalAbortRef.current.abort();
+      }
+      const controller =
+        typeof AbortController === 'function' ? new AbortController() : null;
+      speechEvalAbortRef.current = controller;
+
       let result = null;
       if (aiSettings.provider === AI_PROVIDERS.gemini) {
         result = await evaluateWithGemini({
           apiKey: aiSettings.apiKey.trim(),
           model: aiSettings.model.trim(),
-          prompt });
+          prompt,
+          signal: controller?.signal });
       } else {
         result = await evaluateWithOpenAI({
           apiKey: aiSettings.apiKey.trim(),
           model: aiSettings.model.trim(),
-          prompt });
+          prompt,
+          signal: controller?.signal });
       }
       if (!result) {
         throw new Error('AI returned an unreadable response.');
       }
       const normalized = normalizeSpeechEvaluation(result);
-      setSpeechEvaluation(normalized);
+      if (speechEvalRequestIdRef.current === requestId) {
+        setSpeechEvaluation(normalized);
+      }
     } catch (err) {
-      setSpeechError(err?.message || 'Could not evaluate your spoken answer.');
+      if (err?.name === 'AbortError') {
+        return;
+      }
+      if (speechEvalRequestIdRef.current === requestId) {
+        setSpeechError(getErrorMessage(err, 'Could not evaluate your spoken answer.'));
+      }
     } finally {
-      setIsEvaluatingSpeech(false);
+      if (speechEvalRequestIdRef.current === requestId) {
+        setIsEvaluatingSpeech(false);
+      }
+      if (speechEvalAbortRef.current === controller) {
+        speechEvalAbortRef.current = null;
+      }
     }
   }, [aiSettings, currentWord, speechInterim, speechTranscript]);
 
@@ -1202,8 +1274,10 @@ Return JSON only:
                         style={[
                           styles.nextButton,
                           isListening ? styles.speakingButtonActive : styles.speakingButton,
+                          isEvaluatingSpeech && !isListening ? { opacity: 0.6 } : null,
                         ]}
                         onPress={isListening ? stopListening : startListening}
+                        disabled={isEvaluatingSpeech && !isListening}
                       >
                         <Text style={styles.nextButtonText}>
                           {isListening ? 'Stop Listening' : 'Start Speaking'}
@@ -1215,12 +1289,20 @@ Return JSON only:
                       </Text>
                       {speechError ? <Text style={styles.speakingError}>{speechError}</Text> : null}
                       <Pressable
-                        style={[styles.nextButton, styles.speakingCheckButton]}
+                        style={[
+                          styles.nextButton,
+                          styles.speakingCheckButton,
+                          isEvaluatingSpeech || isListening ? { opacity: 0.6 } : null,
+                        ]}
                         onPress={evaluateSpeechAnswer}
-                        disabled={isEvaluatingSpeech}
+                        disabled={isEvaluatingSpeech || isListening}
                       >
                         <Text style={styles.nextButtonText}>
-                          {isEvaluatingSpeech ? 'Checking...' : 'Check with AI'}
+                          {isListening
+                            ? 'Stop Listening First'
+                            : isEvaluatingSpeech
+                              ? 'Checking...'
+                              : 'Check with AI'}
                         </Text>
                       </Pressable>
 
