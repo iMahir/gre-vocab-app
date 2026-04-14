@@ -45,6 +45,7 @@ Notes:
 - This repo intentionally does not commit `android/` and `ios/` (they are generated when needed).
 - `npm run android` now auto-generates `android/` if missing.
 - The speech recognition dependency `@react-native-voice/voice` ships with a legacy Android support-library dependency; it is automatically patched to AndroidX via `patch-package` during `npm install`.
+- `react-native-nitro-modules` is pinned to `0.29.2` to stay compatible with `react-native-audio-recorder-player@4.5.0` in Android release builds.
 
 To run on iOS:
 
