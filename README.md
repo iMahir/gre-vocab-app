@@ -17,6 +17,11 @@ The app fetches words with the Fetch API from:
   - **Voice Meaning Check**: speak the meaning, transcribe with Android speech recognition, and get AI feedback
 - Mark words as **Mastered**, **Reviewing**, or **Learning**
 - Progress bars per deck for all three learning states
+- Offline-friendly word loading (cached + bundled words, with remote refresh)
+- Tap a search result to jump straight to that deck + word
+- Bookmark words (★) and review bookmarked-only
+- Daily review goal tracking
+- Pronunciation button (text-to-speech)
 - Local progress persistence with AsyncStorage
 - AI settings page to configure provider (`Gemini` or `ChatGPT`), model name, and API key
 - API key stored securely via native keychain/keystore

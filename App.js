@@ -21,6 +21,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Voice from '@react-native-voice/voice';
 import * as Keychain from 'react-native-keychain';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import Tts from 'react-native-tts';
+
+import LOCAL_WORDS from './GRE_Words.json';
 
 const DATA_URL =
   'https://raw.githubusercontent.com/iMahir/gre-vocab-app/refs/heads/main/GRE_Words.json';
@@ -59,7 +62,13 @@ const AI_KEYCHAIN_ACCOUNT = 'gre-ai-api-key';
 const STORAGE_KEYS = {
   statuses: (groupName) => `gre/statuses/${groupName}`,
   cardIndex: (groupName) => `gre/card-index/${groupName}`,
-  aiSettings: 'gre/ai-settings' };
+  aiSettings: 'gre/ai-settings',
+  wordsCache: 'gre/words-cache',
+  wordsCacheAt: 'gre/words-cache-at',
+  bookmarks: 'gre/bookmarks',
+  dailyProgress: 'gre/daily-progress',
+  dailyGoal: 'gre/daily-goal',
+  ttsSlow: 'gre/tts-slow' };
 const STORAGE_PREFIXES = {
   statuses: STORAGE_KEYS.statuses(''),
   cardIndex: STORAGE_KEYS.cardIndex('') };
@@ -75,6 +84,8 @@ const CARD_BACK_TOP_PADDING = 72;
 // Extra top spacing to keep content clear of Android status icons.
 const ANDROID_STATUS_BAR_MARGIN = 10;
 const DASHBOARD_MIN_SEGMENT_FLEX = 1;
+
+const DEFAULT_DAILY_GOAL = 20;
 
 function shuffleArray(values) {
   const next = [...values];
@@ -124,6 +135,55 @@ function getErrorMessage(err, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function pickWeightedNextIndex({
+  words,
+  currentIndex,
+  statuses,
+  bookmarks,
+  bookmarksOnly,
+}) {
+  const total = Array.isArray(words) ? words.length : 0;
+  if (!total) return 0;
+
+  const candidates = [];
+  for (let index = 0; index < total; index += 1) {
+    const word = words[index]?.word;
+    if (!word) continue;
+    if (bookmarksOnly && !bookmarks?.[word]) continue;
+    candidates.push(index);
+  }
+  if (!candidates.length) {
+    return currentIndex ?? 0;
+  }
+
+  // Avoid immediate repeats when possible.
+  const filtered = candidates.length > 1 ? candidates.filter((idx) => idx !== currentIndex) : candidates;
+  const pool = filtered.length ? filtered : candidates;
+
+  // Bias toward learning/reviewing, then unseen, then mastered.
+  const weights = pool.map((idx) => {
+    const w = words[idx]?.word;
+    const state = statuses?.[w];
+    if (state === 'learning') return 4;
+    if (state === 'reviewing') return 3;
+    if (state === 'mastered') return 1;
+    return 2; // unseen
+  });
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+  if (!totalWeight) return pool[0];
+
+  let r = Math.random() * totalWeight;
+  for (let i = 0; i < pool.length; i += 1) {
+    r -= weights[i];
+    if (r <= 0) return pool[i];
+  }
+  return pool[pool.length - 1];
 }
 
 function normalizeSpeechEvaluation(result) {
@@ -240,6 +300,12 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [appScreen, setAppScreen] = useState(APP_SCREENS.decks);
+  const [wordsNotice, setWordsNotice] = useState('');
+
+  const groupsRef = useRef([]);
+  useEffect(() => {
+    groupsRef.current = groups;
+  }, [groups]);
 
   const [selectedGroupIndex, setSelectedGroupIndex] = useState(null);
   const [studyMode, setStudyMode] = useState(null);
@@ -253,6 +319,7 @@ export default function App() {
   const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
   const [quizSummary, setQuizSummary] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [aiSettings, setAiSettings] = useState({
     provider: AI_PROVIDERS.gemini,
     model: DEFAULT_MODELS[AI_PROVIDERS.gemini],
@@ -260,7 +327,17 @@ export default function App() {
   const [settingsDraft, setSettingsDraft] = useState({
     provider: AI_PROVIDERS.gemini,
     model: DEFAULT_MODELS[AI_PROVIDERS.gemini],
-    apiKey: '' });
+    apiKey: '',
+    dailyGoal: String(DEFAULT_DAILY_GOAL) });
+
+  const [dailyGoal, setDailyGoal] = useState(DEFAULT_DAILY_GOAL);
+  const [dailyReviewed, setDailyReviewed] = useState(0);
+
+  const dailyProgressDateRef = useRef(todayKey());
+
+  const [bookmarks, setBookmarks] = useState({});
+  const [deckResumeIndexes, setDeckResumeIndexes] = useState({});
+  const [ttsSlow, setTtsSlow] = useState(false);
   const [speechTranscript, setSpeechTranscript] = useState('');
   const [speechInterim, setSpeechInterim] = useState('');
   const [speechError, setSpeechError] = useState('');
@@ -362,9 +439,48 @@ export default function App() {
     if (!searchQuery.trim()) return [];
     const lowerQuery = searchQuery.toLowerCase();
     return groups
-      .flatMap((g) => g.words)
+      .flatMap((g, groupIndex) =>
+        (g.words ?? []).map((w, wordIndex) => ({
+          ...w,
+          __groupIndex: groupIndex,
+          __groupName: g.group,
+          __wordIndex: wordIndex,
+        }))
+      )
       .filter((w) => w.word.toLowerCase().includes(lowerQuery));
   }, [searchQuery, groups]);
+
+  const groupDeckStats = useMemo(() => {
+    const stats = {};
+    for (const group of groups) {
+      const groupName = group?.group;
+      if (!groupName) continue;
+      const groupWords = group.words ?? [];
+      const countsForGroup = groupWords.reduce(
+        (acc, item) => {
+          const state = globalStatuses[item.word];
+          if (state && acc[state] !== undefined) acc[state] += 1;
+          return acc;
+        },
+        { mastered: 0, reviewing: 0, learning: 0 }
+      );
+      const total = groupWords.length;
+      const unseen = Math.max(0, total - countsForGroup.mastered - countsForGroup.reviewing - countsForGroup.learning);
+      const resumeIndex = Number.isFinite(Number(deckResumeIndexes[groupName]))
+        ? Math.max(0, Number(deckResumeIndexes[groupName]))
+        : 0;
+      const normalizedResume = total ? normalizeCardIndex(resumeIndex, total) : 0;
+      const resumeWord = total ? groupWords[normalizedResume]?.word : '';
+      stats[groupName] = {
+        total,
+        unseen,
+        resumeIndex: normalizedResume,
+        resumeWord,
+        ...countsForGroup,
+      };
+    }
+    return stats;
+  }, [deckResumeIndexes, globalStatuses, groups]);
 
   const refreshGlobalStatuses = useCallback(async (groupsToScan) => {
     const scanGroups = Array.isArray(groupsToScan) ? groupsToScan : [];
@@ -390,8 +506,52 @@ export default function App() {
   }, []);
 
   const loadWords = useCallback(async () => {
-    setLoading(true);
+    const shouldBlock = (groupsRef.current?.length ?? 0) === 0;
+    if (shouldBlock) {
+      setLoading(true);
+    }
     setError('');
+    setWordsNotice('');
+
+    const applyPayload = async (payload, notice) => {
+      if (!Array.isArray(payload)) return;
+      setGroups(payload);
+      await refreshGlobalStatuses(payload);
+      setWordsNotice(notice || '');
+
+      try {
+        const cardKeys = payload.map((g) => STORAGE_KEYS.cardIndex(g.group));
+        const pairs = await AsyncStorage.multiGet(cardKeys);
+        const map = {};
+        for (const [key, value] of pairs) {
+          const groupName = String(key || '').replace(STORAGE_PREFIXES.cardIndex, '');
+          const parsedIndex = Number.parseInt(value ?? '0', 10);
+          map[groupName] = Number.isFinite(parsedIndex) ? Math.max(0, parsedIndex) : 0;
+        }
+        setDeckResumeIndexes(map);
+      } catch {
+        // ignore
+      }
+    };
+
+    // 1) Bootstrap from cache (fast startup)
+    try {
+      const cached = await AsyncStorage.getItem(STORAGE_KEYS.wordsCache);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length) {
+          await applyPayload(parsed, 'Loaded cached words.');
+        }
+      } else if (Array.isArray(LOCAL_WORDS) && LOCAL_WORDS.length) {
+        await applyPayload(LOCAL_WORDS, 'Loaded bundled words.');
+      }
+    } catch {
+      if (Array.isArray(LOCAL_WORDS) && LOCAL_WORDS.length) {
+        await applyPayload(LOCAL_WORDS, 'Loaded bundled words.');
+      }
+    }
+
+    // 2) Refresh from remote
     try {
       const response = await fetch(DATA_URL);
       if (!response.ok) {
@@ -401,12 +561,25 @@ export default function App() {
       if (!Array.isArray(payload)) {
         throw new Error('Invalid words payload.');
       }
-      setGroups(payload);
-      await refreshGlobalStatuses(payload);
+      await applyPayload(payload, 'Loaded latest words.');
+      await AsyncStorage.multiSet([
+        [STORAGE_KEYS.wordsCache, JSON.stringify(payload)],
+        [STORAGE_KEYS.wordsCacheAt, String(Date.now())],
+      ]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load words.');
+      setError(getErrorMessage(err, 'Unable to load latest words.'));
+      if ((groupsRef.current?.length ?? 0) === 0) {
+        // Ensure we still show something even if cache + remote both failed.
+        if (Array.isArray(LOCAL_WORDS) && LOCAL_WORDS.length) {
+          await applyPayload(LOCAL_WORDS, 'Loaded bundled words.');
+        }
+      } else {
+        setWordsNotice('Offline: using cached/bundled words.');
+      }
     } finally {
-      setLoading(false);
+      if (shouldBlock) {
+        setLoading(false);
+      }
     }
   }, [refreshGlobalStatuses]);
 
@@ -415,11 +588,102 @@ export default function App() {
   }, [loadWords]);
 
   useEffect(() => {
+    const hydrateLocalPrefs = async () => {
+      try {
+        const [savedGoal, savedProgress, savedBookmarks, savedTtsSlow] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.dailyGoal),
+          AsyncStorage.getItem(STORAGE_KEYS.dailyProgress),
+          AsyncStorage.getItem(STORAGE_KEYS.bookmarks),
+          AsyncStorage.getItem(STORAGE_KEYS.ttsSlow),
+        ]);
+
+        const parsedGoal = Number.parseInt(savedGoal ?? '', 10);
+        const nextGoal = Number.isFinite(parsedGoal) && parsedGoal > 0 ? parsedGoal : DEFAULT_DAILY_GOAL;
+        setDailyGoal(nextGoal);
+        setSettingsDraft((prev) => ({ ...prev, dailyGoal: String(nextGoal) }));
+
+        const progress = savedProgress ? JSON.parse(savedProgress) : null;
+        const currentDate = todayKey();
+        dailyProgressDateRef.current = currentDate;
+        const nextReviewed =
+          progress && progress.date === currentDate && Number.isFinite(Number(progress.count))
+            ? Math.max(0, Number(progress.count))
+            : 0;
+        setDailyReviewed(nextReviewed);
+        if (!progress || progress.date !== currentDate) {
+          await AsyncStorage.setItem(
+            STORAGE_KEYS.dailyProgress,
+            JSON.stringify({ date: currentDate, count: 0 })
+          );
+        }
+
+        const parsedBookmarks = savedBookmarks ? JSON.parse(savedBookmarks) : {};
+        setBookmarks(parsedBookmarks && typeof parsedBookmarks === 'object' ? parsedBookmarks : {});
+
+        setTtsSlow(savedTtsSlow === 'true');
+      } catch {
+        // ignore hydration errors
+      }
+    };
+    hydrateLocalPrefs();
+  }, []);
+
+  const incrementDailyReviewed = useCallback((delta = 1) => {
+    const currentDate = todayKey();
+    setDailyReviewed((prev) => {
+      const base = dailyProgressDateRef.current === currentDate ? prev : 0;
+      const next = Math.max(0, base + delta);
+      dailyProgressDateRef.current = currentDate;
+      AsyncStorage.setItem(
+        STORAGE_KEYS.dailyProgress,
+        JSON.stringify({ date: currentDate, count: next })
+      ).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const toggleBookmark = useCallback((word) => {
+    const key = String(word || '').trim();
+    if (!key) return;
+    setBookmarks((prev) => {
+      const next = { ...(prev && typeof prev === 'object' ? prev : {}) };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+      }
+      AsyncStorage.setItem(STORAGE_KEYS.bookmarks, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const speakWord = useCallback(async (word) => {
+    const text = String(word || '').trim();
+    if (!text) return;
+    try {
+      await Tts.stop();
+      Tts.speak(text);
+    } catch {
+      Alert.alert('Pronunciation unavailable', 'Text-to-speech is not available on this device.');
+    }
+  }, []);
+
+  useEffect(() => {
+    // TTS init is best-effort; app should still work without it.
+    Tts.setDefaultLanguage('en-US').catch(() => {});
+    Tts.setDefaultRate(ttsSlow ? 0.35 : 0.5, true).catch(() => {});
+    return () => {
+      Tts.stop().catch(() => {});
+    };
+  }, [ttsSlow]);
+
+  useEffect(() => {
     const hydrateSettings = async () => {
       try {
-        const [saved, savedCredentials] = await Promise.all([
+        const [saved, savedCredentials, savedGoal] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.aiSettings),
           Keychain.getGenericPassword({ service: AI_KEYCHAIN_SERVICE }),
+          AsyncStorage.getItem(STORAGE_KEYS.dailyGoal),
         ]);
         if (!saved) return;
         const parsed = JSON.parse(saved);
@@ -431,7 +695,10 @@ export default function App() {
           model: String(parsed.model || DEFAULT_MODELS[provider]),
           apiKey: savedCredentials?.password || '' };
         setAiSettings(nextSettings);
-        setSettingsDraft(nextSettings);
+        const parsedGoal = Number.parseInt(savedGoal ?? '', 10);
+        const nextGoal = Number.isFinite(parsedGoal) && parsedGoal > 0 ? parsedGoal : DEFAULT_DAILY_GOAL;
+        setDailyGoal(nextGoal);
+        setSettingsDraft({ ...nextSettings, dailyGoal: String(nextGoal) });
       } catch {
         setError('Could not load saved AI settings.');
       }
@@ -548,15 +815,21 @@ export default function App() {
           ],
         ]);
         // Update global statuses for dashboard
-        setGlobalStatuses((prev) => ({ ...prev, ...nextStatuses }));
+        if (nextStatuses && typeof nextStatuses === 'object') {
+          setGlobalStatuses((prev) => ({ ...prev, ...nextStatuses }));
+        }
+        if (nextCardIndex !== null && nextCardIndex !== undefined) {
+          setDeckResumeIndexes((prev) => ({ ...prev, [selectedGroup.group]: Number(nextCardIndex) }));
+        }
+        incrementDailyReviewed(1);
       } catch {
         setError('Could not save progress locally.');
       }
     },
-    [cardIndex, selectedGroup, statuses]
+    [cardIndex, incrementDailyReviewed, selectedGroup, statuses]
   );
 
-  const openGroup = useCallback(async (groupIndex) => {
+  const openGroup = useCallback(async (groupIndex, startIndexOverride = null) => {
     const group = groups[groupIndex];
     if (!group) return;
 
@@ -585,8 +858,13 @@ export default function App() {
       }
       const parsedCardIndex = Number.parseInt(savedCardIndex?.[1] ?? '0', 10);
 
+      const overrideIndex = Number.isFinite(Number(startIndexOverride))
+        ? Number(startIndexOverride)
+        : null;
+      const effectiveIndex = overrideIndex === null ? parsedCardIndex : overrideIndex;
+
       setStatuses(parsedStatuses && typeof parsedStatuses === 'object' ? parsedStatuses : {});
-      setCardIndex(Math.max(Number.isNaN(parsedCardIndex) ? 0 : parsedCardIndex, 0));
+      setCardIndex(Math.max(Number.isNaN(effectiveIndex) ? 0 : effectiveIndex, 0));
     } catch {
       setStatuses({});
       setCardIndex(0);
@@ -636,6 +914,7 @@ export default function App() {
                   STORAGE_KEYS.statuses(group.group),
                   STORAGE_KEYS.cardIndex(group.group),
                 ]);
+                setDeckResumeIndexes((prev) => ({ ...prev, [group.group]: 0 }));
                 if (selectedGroup?.group === group.group) {
                   resetSelectedDeckState();
                 }
@@ -672,6 +951,7 @@ export default function App() {
               if (progressKeys.length) {
                 await AsyncStorage.multiRemove(progressKeys);
               }
+              setDeckResumeIndexes({});
               resetSelectedDeckState();
               await refreshGlobalStatuses(groups);
               setError('');
@@ -731,7 +1011,13 @@ export default function App() {
       if (!totalWords) return;
 
       const normalizedCardIndex = normalizeCardIndex(cardIndex, totalWords);
-      const nextCardIndex = (normalizedCardIndex + 1) % totalWords;
+      const nextCardIndex = pickWeightedNextIndex({
+        words,
+        currentIndex: normalizedCardIndex,
+        statuses: nextStatuses,
+        bookmarks,
+        bookmarksOnly: showBookmarkedOnly,
+      });
 
       setStatuses(nextStatuses);
       setCardIndex(nextCardIndex);
@@ -740,7 +1026,19 @@ export default function App() {
       pan.setValue({ x: 0, y: 0 });
       await persistGroupProgress(nextStatuses, nextCardIndex);
     },
-    [cardIndex, currentWord, flipAnim, pan, persistGroupProgress, selectedGroup, statuses, totalWords]
+    [
+      bookmarks,
+      cardIndex,
+      currentWord,
+      flipAnim,
+      pan,
+      persistGroupProgress,
+      selectedGroup,
+      showBookmarkedOnly,
+      statuses,
+      totalWords,
+      words,
+    ]
   );
 
   const classifyBySwipe = useCallback(
@@ -781,8 +1079,14 @@ export default function App() {
         STORAGE_KEYS.aiSettings,
         JSON.stringify({ provider: nextSettings.provider, model: nextSettings.model })
       );
+
+      const parsedGoal = Number.parseInt(String(settingsDraft.dailyGoal ?? ''), 10);
+      const nextGoal = Number.isFinite(parsedGoal) && parsedGoal > 0 ? parsedGoal : DEFAULT_DAILY_GOAL;
+      await AsyncStorage.setItem(STORAGE_KEYS.dailyGoal, String(nextGoal));
+
       setAiSettings(nextSettings);
-      setSettingsDraft(nextSettings);
+      setDailyGoal(nextGoal);
+      setSettingsDraft({ ...nextSettings, dailyGoal: String(nextGoal) });
       setError('');
       Alert.alert('Saved', 'AI settings saved successfully.');
     } catch {
@@ -1104,13 +1408,19 @@ Return JSON only:
   const nextQuizWord = useCallback(async () => {
     if (!totalWords) return;
     const normalizedCardIndex = normalizeCardIndex(cardIndex, totalWords);
-    const nextCardIndex = (normalizedCardIndex + 1) % totalWords;
+    const nextCardIndex = pickWeightedNextIndex({
+      words,
+      currentIndex: normalizedCardIndex,
+      statuses,
+      bookmarks,
+      bookmarksOnly: showBookmarkedOnly,
+    });
     setCardIndex(nextCardIndex);
     setQuizResult(null);
     setQuizSelectedOption('');
     setQuizSummary(null);
     await persistGroupProgress(statuses, nextCardIndex);
-  }, [cardIndex, persistGroupProgress, statuses, totalWords]);
+  }, [bookmarks, cardIndex, persistGroupProgress, showBookmarkedOnly, statuses, totalWords, words]);
 
   const submitQuizAnswer = useCallback(
     (selectedDefinition) => {
@@ -1143,7 +1453,25 @@ Return JSON only:
     [currentWord, nextQuizWord, quizResult, quizScore.correct, quizScore.total]
   );
 
-  const pronunciationButton = null;
+  const isCurrentBookmarked = currentWord?.word ? Boolean(bookmarks?.[currentWord.word]) : false;
+  const pronunciationButton = currentWord ? (
+    <View style={styles.cardTopLeftRow}>
+      <Pressable
+        style={styles.audioIcon}
+        onPress={() => speakWord(currentWord.word)}
+        accessibilityLabel="Play pronunciation"
+      >
+        <Text style={styles.audioIconText}>🔊</Text>
+      </Pressable>
+      <Pressable
+        style={styles.audioIcon}
+        onPress={() => toggleBookmark(currentWord.word)}
+        accessibilityLabel={isCurrentBookmarked ? 'Remove bookmark' : 'Bookmark word'}
+      >
+        <Text style={styles.audioIconText}>{isCurrentBookmarked ? '★' : '☆'}</Text>
+      </Pressable>
+    </View>
+  ) : null;
 
   const frontInterpolate = flipAnim.interpolate({
     inputRange: [0, 1],
@@ -1206,6 +1534,35 @@ Return JSON only:
                 <Text style={styles.backText}>{studyMode ? '← Modes' : '← Decks'}</Text>
               </Pressable>
               <Text style={styles.groupTitle}>{selectedGroup.group}</Text>
+            </View>
+
+            <View style={styles.deckFiltersRow}>
+              <Pressable
+                style={[styles.filterPill, showBookmarkedOnly ? styles.filterPillActive : null]}
+                onPress={() => {
+                  if (!showBookmarkedOnly) {
+                    const hasAny = words.some((w) => bookmarks?.[w.word]);
+                    if (!hasAny) {
+                      Alert.alert('No bookmarks yet', 'Bookmark a word (☆) first, then enable ★ Only.');
+                      return;
+                    }
+                    const nextIndex = pickWeightedNextIndex({
+                      words,
+                      currentIndex: normalizeCardIndex(cardIndex, totalWords),
+                      statuses,
+                      bookmarks,
+                      bookmarksOnly: true,
+                    });
+                    setCardIndex(nextIndex);
+                  }
+                  setShowBookmarkedOnly((prev) => !prev);
+                }}
+              >
+                <Text style={styles.filterPillText}>★ Only</Text>
+              </Pressable>
+              <Text style={styles.deckFiltersMeta}>
+                Today: {dailyReviewed}/{dailyGoal}
+              </Text>
             </View>
 
             {/* Compact Progress Bar */}
@@ -1631,6 +1988,46 @@ Return JSON only:
             <Text style={styles.settingsHint}>
               Active: {aiSettings.provider} • {aiSettings.model || 'No model'}
             </Text>
+
+            <View style={styles.settingsDivider} />
+            <Text style={styles.sectionTitle}>Study Settings</Text>
+            <Text style={styles.settingsLabel}>Daily goal (words reviewed)</Text>
+            <TextInput
+              style={styles.settingsInput}
+              placeholder={String(DEFAULT_DAILY_GOAL)}
+              placeholderTextColor="#777"
+              value={settingsDraft.dailyGoal}
+              onChangeText={(value) =>
+                setSettingsDraft((prev) => ({ ...prev, dailyGoal: value.replace(/[^0-9]/g, '') }))
+              }
+              keyboardType="number-pad"
+            />
+            <Text style={styles.settingsHint}>Today: {dailyReviewed}/{dailyGoal}</Text>
+
+            <Pressable
+              style={[styles.toggleRow, ttsSlow ? styles.toggleRowActive : null]}
+              onPress={() => {
+                const next = !ttsSlow;
+                setTtsSlow(next);
+                AsyncStorage.setItem(STORAGE_KEYS.ttsSlow, next ? 'true' : 'false').catch(() => {});
+              }}
+            >
+              <Text style={styles.toggleRowText}>Slow pronunciation (TTS)</Text>
+              <Text style={styles.toggleRowValue}>{ttsSlow ? 'On' : 'Off'}</Text>
+            </Pressable>
+
+            <Pressable style={styles.modalButton} onPress={() => speakWord('Pronunciation test')}>
+              <Text style={styles.modalButtonText}>Test pronunciation</Text>
+            </Pressable>
+            <Pressable
+              style={styles.modalButton}
+              onPress={async () => {
+                const ok = await ensureMicrophonePermission();
+                Alert.alert('Microphone', ok ? 'Permission granted.' : 'Permission denied.');
+              }}
+            >
+              <Text style={styles.modalButtonText}>Test microphone permission</Text>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.deckListWrap}>
@@ -1638,7 +2035,7 @@ Return JSON only:
             <View style={styles.dashboard}>
               <Text style={styles.dashboardTitle}>Overall Progress</Text>
               <Text style={styles.dashboardStats}>
-                {globalCounts.mastered} Mastered • {allWordsCount} Total Words
+                {globalCounts.mastered} Mastered • {allWordsCount} Total Words • Today {dailyReviewed}/{dailyGoal}
               </Text>
               <View style={styles.ringsRow}>
                 {[
@@ -1710,6 +2107,8 @@ Return JSON only:
               </Pressable>
             </View>
 
+            {wordsNotice ? <Text style={styles.noticeText}>{wordsNotice}</Text> : null}
+
             {/* Search Bar */}
             <View style={styles.searchWrap}>
               <Text style={styles.searchIcon} accessible={false}>
@@ -1728,13 +2127,23 @@ Return JSON only:
             {searchQuery ? (
               <FlatList
                 data={filteredSearchWords}
-                keyExtractor={(item) => item.word}
+                keyExtractor={(item) => `${item.word}-${item.__groupIndex}-${item.__wordIndex}`}
                 contentContainerStyle={styles.deckListContent}
                 renderItem={({ item }) => (
-                  <View style={styles.searchResultItem}>
-                    <Text style={styles.searchWord}>{item.word}</Text>
+                  <Pressable
+                    style={styles.searchResultItem}
+                    onPress={async () => {
+                      await openGroup(item.__groupIndex, item.__wordIndex);
+                      setSearchQuery('');
+                    }}
+                  >
+                    <View style={styles.searchResultTopRow}>
+                      <Text style={styles.searchWord}>{item.word}</Text>
+                      {bookmarks?.[item.word] ? <Text style={styles.searchStar}>★</Text> : null}
+                    </View>
                     <Text style={styles.searchDef}>{item.definition}</Text>
-                  </View>
+                    <Text style={styles.searchDeckMeta}>{item.__groupName}</Text>
+                  </Pressable>
                 )}
                 ListEmptyComponent={<Text style={styles.infoText}>No words found.</Text>}
               />
@@ -1747,7 +2156,51 @@ Return JSON only:
                   <View style={styles.deckButton}>
                     <Pressable style={styles.deckMainArea} onPress={() => openGroup(index)}>
                       <Text style={styles.deckTitle}>{item.group}</Text>
-                      <Text style={styles.deckMeta}>{item.words?.length ?? 0} words</Text>
+                      <Text style={styles.deckMeta}>
+                        {groupDeckStats[item.group]?.total ?? item.words?.length ?? 0} words •{' '}
+                        {groupDeckStats[item.group]?.mastered ?? 0} mastered • Resume{' '}
+                        {groupDeckStats[item.group]?.total
+                          ? (groupDeckStats[item.group]?.resumeIndex ?? 0) + 1
+                          : 0}
+                        /{groupDeckStats[item.group]?.total ?? item.words?.length ?? 0}
+                      </Text>
+
+                      <View style={styles.deckProgressBar}>
+                        <View
+                          style={{
+                            backgroundColor: STATE_COLORS.mastered,
+                            flex: groupDeckStats[item.group]?.mastered || DASHBOARD_MIN_SEGMENT_FLEX,
+                            height: '100%',
+                          }}
+                        />
+                        <View
+                          style={{
+                            backgroundColor: STATE_COLORS.reviewing,
+                            flex: groupDeckStats[item.group]?.reviewing || DASHBOARD_MIN_SEGMENT_FLEX,
+                            height: '100%',
+                          }}
+                        />
+                        <View
+                          style={{
+                            backgroundColor: STATE_COLORS.learning,
+                            flex: groupDeckStats[item.group]?.learning || DASHBOARD_MIN_SEGMENT_FLEX,
+                            height: '100%',
+                          }}
+                        />
+                        <View
+                          style={{
+                            backgroundColor: '#333',
+                            flex: groupDeckStats[item.group]?.unseen || 1,
+                            height: '100%',
+                          }}
+                        />
+                      </View>
+
+                      {groupDeckStats[item.group]?.resumeWord ? (
+                        <Text style={styles.deckResumeText}>
+                          Next up: {groupDeckStats[item.group]?.resumeWord}
+                        </Text>
+                      ) : null}
                     </Pressable>
                     <Pressable
                       style={styles.resetGroupButton}
@@ -1795,6 +2248,7 @@ const styles = StyleSheet.create({
   settingsTopButton: { borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#111' },
   settingsTopButtonText: { color: '#fff', fontSize: 12 },
   sectionTitle: { color: '#fff', fontSize: 18, marginBottom: 12 },
+  noticeText: { color: '#777', fontSize: 12, marginTop: -8, marginBottom: 12 },
 
   // Dashboard & Search
   dashboard: { backgroundColor: '#151515', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#252525' },
@@ -1809,8 +2263,11 @@ const styles = StyleSheet.create({
   searchIcon: { color: '#7f8aa3', fontSize: 15, marginRight: 8 },
   searchInput: { flex: 1, color: '#fff', paddingVertical: 14, fontSize: 15 },
   searchResultItem: { backgroundColor: '#111', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#252525' },
+  searchResultTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   searchWord: { color: '#fff', fontSize: 16 },
+  searchStar: { color: '#fff', fontSize: 14 },
   searchDef: { color: '#aaa', fontSize: 13, marginTop: 4 },
+  searchDeckMeta: { color: '#666', fontSize: 11, marginTop: 8 },
 
   // Decks
   deckListWrap: { flex: 1 },
@@ -1819,6 +2276,8 @@ const styles = StyleSheet.create({
   deckMainArea: { flex: 1, padding: 18 },
   deckTitle: { color: '#fff', fontSize: 17 },
   deckMeta: { color: '#888', marginTop: 4 },
+  deckProgressBar: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginTop: 10, backgroundColor: '#333' },
+  deckResumeText: { color: '#777', fontSize: 12, marginTop: 8 },
   resetGroupButton: { marginRight: 14, borderWidth: 1, borderColor: '#444', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#171717' },
   resetGroupButtonText: { color: '#ddd', fontSize: 12 },
 
@@ -1827,6 +2286,11 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   backText: { color: '#fff', fontSize: 14 },
   groupTitle: { color: '#fff', fontSize: 16 },
+  deckFiltersRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  filterPill: { borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#111' },
+  filterPillActive: { borderColor: '#fff', backgroundColor: '#1d1d1d' },
+  filterPillText: { color: '#fff', fontSize: 12 },
+  deckFiltersMeta: { color: '#777', fontSize: 12 },
 
   // Flashcards UI
   cardFlipContainer: { flex: 1, minHeight: CARD_MIN_HEIGHT },
@@ -1835,6 +2299,7 @@ const styles = StyleSheet.create({
   cardFace: { backfaceVisibility: 'hidden' },
   cardBack: { position: 'absolute', width: '100%', top: 0, left: 0, justifyContent: 'flex-start', paddingTop: CARD_BACK_TOP_PADDING, paddingBottom: 12 },
   cardTopRow: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardTopLeftRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   audioIcon: { backgroundColor: '#222', borderRadius: 20, padding: 8 },
   audioIconText: { fontSize: 18 },
   cardTag: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
@@ -1909,6 +2374,11 @@ const styles = StyleSheet.create({
   settingsLabel: { color: '#bbb', fontSize: 13 },
   settingsInput: { borderWidth: 1, borderColor: '#2f2f2f', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: '#fff', backgroundColor: '#090909' },
   settingsHint: { color: '#777', fontSize: 12, marginTop: 4 },
+  settingsDivider: { height: 1, backgroundColor: '#252525', marginVertical: 10 },
+  toggleRow: { borderWidth: 1, borderColor: '#2f2f2f', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#090909', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  toggleRowActive: { borderColor: '#fff', backgroundColor: '#1d1d1d' },
+  toggleRowText: { color: '#fff', fontSize: 14 },
+  toggleRowValue: { color: '#bbb', fontSize: 12 },
 
   errorBox: { marginBottom: 12, borderWidth: 1, borderColor: '#301818', borderRadius: 12, padding: 12, backgroundColor: '#1A0B0B' },
   errorText: { color: '#F44336', marginBottom: 8 },
