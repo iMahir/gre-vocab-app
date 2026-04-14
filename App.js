@@ -20,6 +20,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Voice from '@react-native-voice/voice';
 import * as Keychain from 'react-native-keychain';
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 
 const DATA_URL =
   'https://raw.githubusercontent.com/iMahir/gre-vocab-app/refs/heads/main/GRE_Words.json';
@@ -197,6 +198,43 @@ async function evaluateWithOpenAI({ apiKey, model, prompt, signal }) {
   return extractJsonObject(rawText);
 }
 
+async function transcribeWithOpenAI({ apiKey, audioUri, signal }) {
+  const uriValue = String(audioUri || '').trim();
+  if (!uriValue) {
+    throw new Error('No recording found to transcribe.');
+  }
+
+  const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(uriValue);
+  const normalizedUri = hasScheme ? uriValue : `file://${uriValue}`;
+
+  const formData = new FormData();
+  formData.append('file', {
+    uri: normalizedUri,
+    name: 'speech.m4a',
+    type: 'audio/mp4',
+  });
+  formData.append('model', 'whisper-1');
+
+  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+    signal,
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || 'OpenAI transcription failed.');
+  }
+  const text = payload?.text;
+  if (typeof text !== 'string') {
+    throw new Error('OpenAI transcription returned no text.');
+  }
+  return text;
+}
+
 export default function App() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -229,11 +267,16 @@ export default function App() {
   const [isListening, setIsListening] = useState(false);
   const [isEvaluatingSpeech, setIsEvaluatingSpeech] = useState(false);
   const [speechEvaluation, setSpeechEvaluation] = useState(null);
+  const [speechNativeBroken, setSpeechNativeBroken] = useState(false);
+  const [isRecordingSpeech, setIsRecordingSpeech] = useState(false);
+  const [isTranscribingSpeech, setIsTranscribingSpeech] = useState(false);
 
   const autoAdvanceRef = useRef(null);
   const swipeBusyRef = useRef(false);
   const speechEvalAbortRef = useRef(null);
   const speechEvalRequestIdRef = useRef(0);
+  const speechTranscribeAbortRef = useRef(null);
+  const speechTranscribeRequestIdRef = useRef(0);
   const flipAnim = useRef(new Animated.Value(0)).current;
   const pan = useRef(new Animated.ValueXY()).current;
 
@@ -426,15 +469,23 @@ export default function App() {
       speechEvalAbortRef.current.abort();
       speechEvalAbortRef.current = null;
     }
+    speechTranscribeRequestIdRef.current += 1;
+    if (speechTranscribeAbortRef.current) {
+      speechTranscribeAbortRef.current.abort();
+      speechTranscribeAbortRef.current = null;
+    }
     setSpeechTranscript('');
     setSpeechInterim('');
     setSpeechError('');
     setSpeechEvaluation(null);
     setIsEvaluatingSpeech(false);
+    setIsTranscribingSpeech(false);
     setIsListening(false);
+    setIsRecordingSpeech(false);
     Voice.cancel().catch((err) => {
       if (__DEV__) console.warn('Voice cancel failed', err);
     });
+    AudioRecorderPlayer.stopRecorder().catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -467,12 +518,18 @@ export default function App() {
         speechEvalAbortRef.current.abort();
         speechEvalAbortRef.current = null;
       }
+      speechTranscribeRequestIdRef.current += 1;
+      if (speechTranscribeAbortRef.current) {
+        speechTranscribeAbortRef.current.abort();
+        speechTranscribeAbortRef.current = null;
+      }
       Voice.cancel().catch(() => {});
       Voice.destroy()
         .then(() => Voice.removeAllListeners())
         .catch((err) => {
           if (__DEV__) console.warn('Voice cleanup failed', err);
         });
+      AudioRecorderPlayer.stopRecorder().catch(() => {});
     };
   }, []);
 
@@ -763,10 +820,16 @@ export default function App() {
         setSpeechError('Microphone permission is required.');
         return;
       }
-      const isAvailable = await Voice.isAvailable().catch(() => 0);
-      if (!isAvailable) {
-        setSpeechError('Speech recognition is unavailable on this device.');
-        return;
+      // Some devices incorrectly report speech as unavailable; attempt start and fallback if it fails.
+      setSpeechNativeBroken(false);
+
+      setIsRecordingSpeech(false);
+      setIsTranscribingSpeech(false);
+      AudioRecorderPlayer.stopRecorder().catch(() => {});
+      speechTranscribeRequestIdRef.current += 1;
+      if (speechTranscribeAbortRef.current) {
+        speechTranscribeAbortRef.current.abort();
+        speechTranscribeAbortRef.current = null;
       }
 
       if (speechEvalAbortRef.current) {
@@ -782,6 +845,7 @@ export default function App() {
       setSpeechEvaluation(null);
       await Voice.start('en-US');
     } catch (err) {
+      setSpeechNativeBroken(true);
       setSpeechError(getErrorMessage(err, 'Could not start voice recognition.'));
     }
   }, [currentWord, ensureMicrophonePermission]);
@@ -793,6 +857,109 @@ export default function App() {
       setSpeechError('Could not stop voice recognition.');
     }
   }, []);
+
+  const startSpeechRecording = useCallback(async () => {
+    if (!currentWord) return;
+    try {
+      const hasMicrophonePermission = await ensureMicrophonePermission();
+      if (!hasMicrophonePermission) {
+        setSpeechError('Microphone permission is required.');
+        return;
+      }
+
+      if (aiSettings.provider !== AI_PROVIDERS.openai) {
+        setSpeechError(
+          'Cloud transcription requires ChatGPT provider. Open Settings, switch to ChatGPT, save an OpenAI API key, then try again.'
+        );
+        return;
+      }
+      if (!aiSettings.apiKey.trim()) {
+        setSpeechError('OpenAI API key is required for cloud transcription.');
+        return;
+      }
+
+      speechEvalRequestIdRef.current += 1;
+      if (speechEvalAbortRef.current) {
+        speechEvalAbortRef.current.abort();
+        speechEvalAbortRef.current = null;
+      }
+
+      speechTranscribeRequestIdRef.current += 1;
+      if (speechTranscribeAbortRef.current) {
+        speechTranscribeAbortRef.current.abort();
+        speechTranscribeAbortRef.current = null;
+      }
+
+      await Voice.cancel().catch(() => {});
+      setIsListening(false);
+
+      setSpeechTranscript('');
+      setSpeechInterim('');
+      setSpeechError('');
+      setSpeechEvaluation(null);
+      setIsEvaluatingSpeech(false);
+      setIsTranscribingSpeech(false);
+
+      setIsRecordingSpeech(true);
+      await AudioRecorderPlayer.startRecorder();
+    } catch (err) {
+      setIsRecordingSpeech(false);
+      setSpeechError(getErrorMessage(err, 'Could not start recording.'));
+    }
+  }, [aiSettings, currentWord, ensureMicrophonePermission]);
+
+  const stopSpeechRecording = useCallback(async () => {
+    let controller = null;
+    try {
+      const audioUri = await AudioRecorderPlayer.stopRecorder();
+      setIsRecordingSpeech(false);
+
+      if (aiSettings.provider !== AI_PROVIDERS.openai) {
+        setSpeechError(
+          'Cloud transcription requires ChatGPT provider. Open Settings, switch to ChatGPT, save an OpenAI API key, then try again.'
+        );
+        return;
+      }
+      if (!aiSettings.apiKey.trim()) {
+        setSpeechError('OpenAI API key is required for cloud transcription.');
+        return;
+      }
+
+      const requestId = speechTranscribeRequestIdRef.current + 1;
+      speechTranscribeRequestIdRef.current = requestId;
+
+      if (speechTranscribeAbortRef.current) {
+        speechTranscribeAbortRef.current.abort();
+      }
+
+      controller = typeof AbortController === 'function' ? new AbortController() : null;
+      speechTranscribeAbortRef.current = controller;
+
+      setIsTranscribingSpeech(true);
+      setSpeechError('');
+
+      const text = await transcribeWithOpenAI({
+        apiKey: aiSettings.apiKey.trim(),
+        audioUri,
+        signal: controller?.signal,
+      });
+
+      if (speechTranscribeRequestIdRef.current === requestId) {
+        setSpeechTranscript(String(text || '').trim());
+        setSpeechInterim('');
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') {
+        return;
+      }
+      setSpeechError(getErrorMessage(err, 'Could not transcribe your recording.'));
+    } finally {
+      setIsTranscribingSpeech(false);
+      if (speechTranscribeAbortRef.current === controller) {
+        speechTranscribeAbortRef.current = null;
+      }
+    }
+  }, [aiSettings]);
 
   const evaluateSpeechAnswer = useCallback(async () => {
     if (!currentWord) return;
@@ -1274,15 +1441,44 @@ Return JSON only:
                         style={[
                           styles.nextButton,
                           isListening ? styles.speakingButtonActive : styles.speakingButton,
-                          isEvaluatingSpeech && !isListening ? { opacity: 0.6 } : null,
+                          (isEvaluatingSpeech || isTranscribingSpeech || isRecordingSpeech) && !isListening
+                            ? { opacity: 0.6 }
+                            : null,
                         ]}
                         onPress={isListening ? stopListening : startListening}
-                        disabled={isEvaluatingSpeech && !isListening}
+                        disabled={
+                          (isEvaluatingSpeech || isTranscribingSpeech || isRecordingSpeech) && !isListening
+                        }
                       >
                         <Text style={styles.nextButtonText}>
                           {isListening ? 'Stop Listening' : 'Start Speaking'}
                         </Text>
                       </Pressable>
+
+                      {speechNativeBroken ? (
+                        <Text style={styles.modeCardMeta}>
+                          Device speech recognition isn’t available on this device. Use Record & Transcribe.
+                        </Text>
+                      ) : null}
+
+                      <Pressable
+                        style={[
+                          styles.nextButton,
+                          isRecordingSpeech ? styles.speakingButtonActive : styles.speakingButton,
+                          isListening || isEvaluatingSpeech || isTranscribingSpeech ? { opacity: 0.6 } : null,
+                        ]}
+                        onPress={isRecordingSpeech ? stopSpeechRecording : startSpeechRecording}
+                        disabled={isListening || isEvaluatingSpeech || isTranscribingSpeech}
+                      >
+                        <Text style={styles.nextButtonText}>
+                          {isTranscribingSpeech
+                            ? 'Transcribing...'
+                            : isRecordingSpeech
+                              ? 'Stop Recording'
+                              : 'Record & Transcribe'}
+                        </Text>
+                      </Pressable>
+
                       <Text style={styles.speakingTranscriptLabel}>Transcript</Text>
                       <Text style={styles.speakingTranscriptValue}>
                         {speechTranscript || speechInterim || 'Your spoken answer will appear here.'}
@@ -1292,14 +1488,20 @@ Return JSON only:
                         style={[
                           styles.nextButton,
                           styles.speakingCheckButton,
-                          isEvaluatingSpeech || isListening ? { opacity: 0.6 } : null,
+                          isEvaluatingSpeech || isListening || isRecordingSpeech || isTranscribingSpeech
+                            ? { opacity: 0.6 }
+                            : null,
                         ]}
                         onPress={evaluateSpeechAnswer}
-                        disabled={isEvaluatingSpeech || isListening}
+                        disabled={isEvaluatingSpeech || isListening || isRecordingSpeech || isTranscribingSpeech}
                       >
                         <Text style={styles.nextButtonText}>
                           {isListening
                             ? 'Stop Listening First'
+                            : isRecordingSpeech
+                              ? 'Stop Recording First'
+                              : isTranscribingSpeech
+                                ? 'Wait for Transcript'
                             : isEvaluatingSpeech
                               ? 'Checking...'
                               : 'Check with AI'}

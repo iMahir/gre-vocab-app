@@ -55,6 +55,15 @@ npm run ios
 4. Paste your API key and tap **Save Settings**.
 5. Open a deck → **Voice Meaning Check** mode → speak and evaluate.
 
+### If your device says speech recognition is unavailable
+
+Some Android devices (or ROMs without Google voice services) cannot run on-device speech recognition.
+
+The app includes a fallback inside **Voice Meaning Check**: **Record & Transcribe** (cloud STT via OpenAI Whisper).
+
+- In **Settings**, switch provider to **ChatGPT** and save an OpenAI API key.
+- In voice mode, tap **Record & Transcribe**, then **Check with AI**.
+
 ## Android release identity policy
 
 To keep installs/upgrades consistent with prior releases, the Android release workflow enforces:
