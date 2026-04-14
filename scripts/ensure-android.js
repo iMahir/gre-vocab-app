@@ -10,13 +10,15 @@ function readJson(jsonPath) {
 }
 
 function commandFor(bin) {
-  if (process.platform === 'win32') return `${bin}.cmd`;
+  // Prefer shell resolution on Windows (more robust across Node versions).
+  if (process.platform === 'win32') return bin;
   return bin;
 }
 
 function run(command, args, options) {
   const result = spawnSync(command, args, {
     stdio: 'inherit',
+    shell: process.platform === 'win32',
     ...options,
   });
   if (result.error) {
